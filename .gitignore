@@ -17,3 +17,6 @@ __pycache__/
 # Local screenshots or oversized artifacts
 *.png
 output/*.png
+
+# Before/after screenshots used in docs and pull requests
+!docs/screenshots/*.png
