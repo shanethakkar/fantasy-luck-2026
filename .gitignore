@@ -1,0 +1,19 @@
+# Raw nflverse / ffopportunity extracts (download with download_data.py)
+data/*.parquet
+data/*.csv
+data/*.rds
+data/*.qs
+*.tmp
+
+# Local environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+
+# Local screenshots or oversized artifacts
+*.png
+output/*.png

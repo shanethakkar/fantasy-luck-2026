@@ -1,0 +1,42 @@
+{
+  "pbp_timestamp": {
+    "last_updated": "2026-11-16 14:32:22 EST"
+  },
+  "ffopportunity_timestamp_raw": "2026-11-16 14:00:30.764138",
+  "games": 149,
+  "date_min": "2026-09-09",
+  "date_max": "2026-11-15",
+  "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "week10_games": 13,
+  "missing_note": "Week 10 MNF LAC @ BAL Mon Nov 16, 2026 not in file. Week 10 bye teams appear to be CHI, DEN, PHI, TB.",
+  "league_2026_rush_td": 282.0,
+  "league_2026_rush_xtd": 292.2154493590774,
+  "league_2026_pass_td": 458.0,
+  "league_2026_pass_xtd": 432.9313267444472,
+  "ffopportunity_scoring": "PPR",
+  "filters": {
+    "rb_looks": 40,
+    "wrte_targets": 25,
+    "qb_attempts": 150
+  },
+  "n_qualified": {
+    "rb": 72,
+    "wrte": 124,
+    "qb": 28
+  },
+  "train_rushes": 42627,
+  "train_rush_tds": 1491,
+  "train_throws": 51105,
+  "train_pass_tds": 2374
+}
