@@ -18,5 +18,3 @@ __pycache__/
 *.png
 output/*.png
 
-# Before/after screenshots used in docs and pull requests
-!docs/screenshots/*.png
