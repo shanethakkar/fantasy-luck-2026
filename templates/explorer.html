@@ -159,14 +159,15 @@
   }
   .icon-btn:hover { color: var(--ink); border-color: var(--border-strong); }
   .icon-btn svg { width: 18px; height: 18px; }
-  .hero { padding: 28px 0 24px; display: grid; gap: 14px; max-width: 58rem; }
+  .hero { padding: 28px 0 22px; display: grid; gap: 10px; max-width: 58rem; }
   .hero h1 {
     margin: 0; font-size: var(--fs-2xl); line-height: 1.08; letter-spacing: -0.03em; font-weight: 750;
     text-wrap: balance;
   }
   .hero h1 span { color: var(--muted); font-weight: 650; }
-  .lede { margin: 0; color: var(--ink-2); font-size: var(--fs-lg); line-height: 1.5; max-width: 44rem; text-wrap: pretty; }
+  .lede { margin: 0; color: var(--ink-2); font-size: var(--fs-lg); line-height: 1.45; max-width: 44rem; text-wrap: pretty; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .meta-line { margin: 0; font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
   .chip {
     display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
     border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
@@ -229,21 +230,7 @@
     font-size: var(--fs-sm); font-weight: 600; padding: 8px 4px; text-decoration: underline; text-underline-offset: 3px;
   }
   .reset-btn:hover { color: var(--ink); }
-  @media (max-width: 759px) {
-    .filters { padding: 12px; gap: 12px 14px; }
-    .field-pos, .field-search { flex: 1 1 100%; }
-    .seg { display: flex; }
-    .field-pos .seg button { flex: 1; justify-content: center; }
-    .search input { width: 100%; }
-    input[type=range] { width: 140px; }
-    .filters .spacer, .reset-btn { display: none; }
-    .field-hint { display: none; }
-    .lede { font-size: var(--fs-md); }
-    .hero { padding: 20px 0 18px; gap: 10px; }
-    .insights .rank-list li button { grid-template-columns: 1.1rem minmax(0, 1fr) 44px 3.8rem; gap: 8px; }
-    .lb .c-player { min-width: 168px; padding-left: 12px; }
-    .lb .mini { width: 40px; }
-  }
+
 
   /* ---------- Cards ---------- */
   .card {
@@ -428,10 +415,10 @@
 
   /* ---------- Methodology ---------- */
   .method { margin-top: 16px; }
-  .method-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; padding: 4px 18px 18px; }
-  @media (max-width: 860px) { .method-grid { grid-template-columns: 1fr; } }
+  .method-grid { padding: 4px 18px 18px; max-width: 72ch; }
+  .prose .stat-table { margin: 4px 0 6px; }
   .prose { color: var(--ink-2); font-size: var(--fs-sm); }
-  .prose p { margin: 0 0 10px; max-width: 62ch; }
+  .prose p { margin: 0 0 10px; max-width: 68ch; }
   .prose strong { color: var(--ink); font-weight: 650; }
   .prose details { border-top: 1px solid var(--border); padding: 10px 0; }
   .prose details:last-child { border-bottom: 1px solid var(--border); }
@@ -453,6 +440,145 @@
     background: var(--hot-soft); color: var(--hot-text); font-size: var(--fs-sm); font-weight: 500;
   }
   .warn.show { display: block; }
+
+  /* ---------- Filter extras (team, sheet, sort) ---------- */
+  .select-wrap { position: relative; display: inline-block; }
+  .select-wrap::after {
+    content: ""; position: absolute; right: 12px; top: 50%; width: 6px; height: 6px; margin-top: -5px;
+    border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); pointer-events: none;
+  }
+  .select {
+    appearance: none; -webkit-appearance: none; border: 1px solid var(--border-strong); border-radius: 10px;
+    background: var(--surface); color: var(--ink); font: 500 var(--fs-sm) var(--font);
+    padding: 7px 32px 7px 10px; min-height: 36px; cursor: pointer; max-width: 100%;
+  }
+  #team { width: 130px; }
+  @media (min-width: 760px) { .search input { width: 190px; } input[type=range] { width: 150px; } }
+  .filter-panel, .fp-foot { display: contents; }
+  .filter-toggle, .fp-head, .fbackdrop, .active-row, #fpDone, .ins-tabs, .mlist, .msort { display: none; }
+  .btn-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .btn-primary:hover { background: var(--ink); opacity: 0.9; }
+  .board-head-text { display: grid; gap: 2px; }
+
+  /* ---------- Phone layout ---------- */
+  @media (max-width: 759px) {
+    .wrap { display: flex; flex-direction: column; }
+    .board { order: 1; }
+    .main-grid { order: 2; margin-top: 16px; }
+    .method { order: 3; }
+    footer { order: 4; }
+
+    .hero { padding: 18px 0 16px; gap: 8px; }
+    .hero h1 { font-size: 1.85rem; }
+    .lede { font-size: var(--fs-md); }
+
+    /* Sticky bar: position chips + Filters button */
+    .filters {
+      position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px;
+      margin: 0 calc(-1 * var(--gutter)) 12px;
+      padding-block: 8px;
+      padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+      background: var(--page); border: 0; border-bottom: 1px solid var(--border); border-radius: 0;
+      box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+    }
+    .field-pos .field-label { display: none; }
+    .field-pos .seg { display: flex; }
+    .field-pos .seg button { flex: 1; justify-content: center; padding: 6px 4px; min-height: 36px; }
+    .field-pos .seg svg { display: none; }
+    .filter-toggle {
+      appearance: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+      border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink);
+      border-radius: 10px; min-height: 42px; padding: 0 12px; font-size: var(--fs-sm); font-weight: 600;
+    }
+    .filter-toggle svg { width: 16px; height: 16px; }
+    .fbadge {
+      min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ink); color: var(--surface);
+      font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
+    }
+    .fbadge[hidden] { display: none; }
+    .active-row:not([hidden]) { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
+    .achip {
+      appearance: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+      border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink);
+      border-radius: 999px; padding: 4px 10px; font-size: var(--fs-xs); font-weight: 600; min-height: 28px;
+    }
+    .achip span { color: var(--muted); font-size: 1.1em; line-height: 1; }
+
+    /* Filters as a bottom sheet */
+    .filters.panel-open { z-index: 70; }
+    .fbackdrop {
+      display: block; position: fixed; inset: 0; z-index: 1; background: rgba(0, 0, 0, 0.35);
+      opacity: 0; pointer-events: none; transition: opacity 200ms;
+    }
+    .filters.panel-open .fbackdrop { opacity: 1; pointer-events: auto; }
+    .filter-panel {
+      display: grid; gap: 18px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 2;
+      max-height: 88vh; max-height: 88dvh; overflow: auto; overscroll-behavior: contain;
+      background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-lg);
+      padding: 14px max(18px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+      transform: translateY(105%); visibility: hidden; transition: transform 240ms cubic-bezier(.2,.8,.2,1), visibility 240ms;
+    }
+    .filters.panel-open .filter-panel { transform: none; visibility: visible; }
+    .fp-head { display: flex; align-items: center; justify-content: space-between; }
+    .fp-head h2 { margin: 0; font-size: var(--fs-lg); font-weight: 700; }
+    .filter-panel .field { width: 100%; }
+    .filter-panel .seg { display: flex; }
+    .filter-panel .seg button { flex: 1; justify-content: center; min-height: 40px; }
+    .filter-panel .select-wrap, .filter-panel .select, #team { width: 100%; min-height: 44px; font-size: 16px; }
+    .search input { width: 100%; min-height: 44px; font-size: 16px; }
+    .range-row input[type=range] { flex: 1; width: auto; }
+    .filters .spacer { display: none; }
+    .fp-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .reset-btn { display: inline; }
+    #fpDone { display: inline-flex; justify-content: center; align-items: center; flex: 1; min-height: 46px; font-size: var(--fs-md); }
+
+    /* Hottest / coldest as tabs */
+    .insights { gap: 10px; margin-bottom: 0; }
+    .ins-tabs { display: flex; }
+    .ins-tabs button { flex: 1; justify-content: center; min-height: 38px; }
+    .insights[data-tab="hot"] .ins-cold, .insights[data-tab="cold"] .ins-hot { display: none; }
+    .insights .card-head { display: none; }
+    .rank-list { padding: 6px 6px 8px; }
+    .insights .rank-list li button { grid-template-columns: 1.1rem minmax(0, 1fr) 44px 3.8rem; gap: 8px; padding: 9px 8px; }
+
+    /* Leaderboard as a list */
+    .board .card-head { align-items: center; flex-wrap: nowrap; padding-bottom: 10px; }
+    .board-sub { display: none; }
+    .msort { display: inline-block; flex: none; }
+    .msort .select { min-height: 38px; font-size: var(--fs-sm); max-width: 11.5rem; }
+    .table-scroll { display: none; }
+    .mlist { display: block; list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+    .mlist li + li { border-top: 1px solid var(--border); }
+    .mlist button {
+      appearance: none; width: 100%; border: 0; background: none; cursor: pointer; text-align: left;
+      display: grid; grid-template-columns: 1.7rem minmax(0, 1fr) auto; align-items: center; gap: 8px;
+      padding: 11px 16px 11px 12px; min-height: 60px;
+    }
+    .mlist button:active { background: var(--sel); }
+    .mlist .rk { color: var(--muted); font-size: var(--fs-xs); text-align: right; font-variant-numeric: tabular-nums; }
+    .mlist .who-sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mlist .who-sub svg { display: inline-block; vertical-align: -1px; margin-right: 5px; }
+    .rank-list li button[aria-current="true"], .mlist button[aria-current="true"] { background: none; }
+    .mval { display: grid; justify-items: end; gap: 5px; }
+    .mval b { font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+    .mbar { width: 48px; height: 5px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+    .mbar i { display: block; height: 100%; margin-left: auto; border-radius: 3px; }
+    .mbar i.hot { background: var(--hot); }
+    .mbar i.cold { background: var(--cold); }
+    .board-foot { justify-content: center; }
+    .board-foot p { display: none; }
+    .board-foot .btn { width: 100%; min-height: 44px; }
+
+    .chart-note { display: none; }
+    .detail-head .verdict { display: none; }
+    #scatter { height: 340px; min-height: 340px; }
+    .method-grid { padding: 4px 16px 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .filter-panel, .fbackdrop { transition: none; }
+  }
   footer { padding: 24px 0 48px; color: var(--muted); font-size: var(--fs-xs); }
   footer p { margin: 0 0 4px; max-width: 80ch; }
 </style>
@@ -486,20 +612,31 @@
 
     <header class="hero">
       <h1>Who's outscoring their opportunity <span>in 2026?</span></h1>
-      <p class="lede">Every rush and target is priced at what a league-average play in the same spot usually scores. The gap between actual and expected PPR is luck plus skill, not a talent rating.</p>
-      <div class="meta-row">
-        <span class="chip"><span class="dot" aria-hidden="true"></span><span id="throughChip">Through Sunday, November 15, 2026</span></span>
-        <span class="chip" id="weeksChip">Weeks 1–10</span>
-        <span class="chip" id="playersChip">534 players</span>
-      </div>
+      <p class="lede">Each player's fantasy points next to what their touches usually produce.</p>
+      <p class="meta-line"><span id="weeksChip">Weeks 1–10</span><span aria-hidden="true"> · </span><span id="throughChip">through November 15</span><span aria-hidden="true"> · </span><span id="playersChip">534 players</span></p>
     </header>
 
     <div id="cdnWarn" class="warn" role="alert">The chart library didn't load, so the charts are hidden. The tables still work. Check your connection and refresh to see the charts.</div>
 
-    <section class="filters" aria-label="Filters">
+    <section class="filters" id="filters" aria-label="Filters">
       <div class="field field-pos">
         <span class="field-label" id="posLabel">Position</span>
         <div class="seg" id="posSeg" role="group" aria-labelledby="posLabel"></div>
+      </div>
+      <button type="button" class="filter-toggle" id="filterToggle" aria-expanded="false" aria-controls="filterPanel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        Filters<span class="fbadge" id="fbadge" hidden></span>
+      </button>
+      <div class="active-row" id="activeRow" hidden></div>
+      <div class="fbackdrop" id="fbackdrop"></div>
+      <div class="filter-panel" id="filterPanel" aria-labelledby="fpTitle">
+      <div class="fp-head">
+        <h2 id="fpTitle">Filters</h2>
+        <button type="button" class="icon-btn" id="fpClose" aria-label="Close filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="field field-team">
+        <label class="field-label" for="team">Team</label>
+        <span class="select-wrap"><select id="team" class="select"><option value="ALL">All teams</option></select></span>
       </div>
       <div class="field">
         <span class="field-label" id="modeLabel">Measure</span>
@@ -514,7 +651,7 @@
           <input type="range" id="opp" min="0" max="300" step="5" value="25" aria-describedby="oppHint">
           <output id="oppVal" for="opp">25</output>
         </div>
-        <span class="field-hint" id="oppHint">Rushes + targets; pass attempts for QBs</span>
+        <span class="field-hint" id="oppHint">Rushes + targets</span>
       </div>
       <div class="field field-search">
         <label class="field-label" for="search">Find a player</label>
@@ -524,11 +661,19 @@
         </div>
       </div>
       <div class="spacer"></div>
-      <button type="button" class="reset-btn" id="resetBtn">Reset filters</button>
+      <div class="fp-foot">
+        <button type="button" class="reset-btn" id="resetBtn">Reset filters</button>
+        <button type="button" class="btn btn-primary" id="fpDone">Show players</button>
+      </div>
+      </div>
     </section>
 
-    <section class="insights" aria-label="Biggest gaps">
-      <article class="card">
+    <section class="insights" id="insights" data-tab="hot" aria-label="Biggest gaps">
+      <div class="seg ins-tabs" id="insTabs" role="group" aria-label="Show">
+        <button type="button" data-tab="hot" aria-pressed="true">Running hottest</button>
+        <button type="button" data-tab="cold" aria-pressed="false">Running coldest</button>
+      </div>
+      <article class="card ins-hot">
         <div class="card-head">
           <div>
             <h2 class="insight-title"><span class="badge hot" aria-hidden="true"><svg><use href="#i-up"/></svg></span>Running hottest</h2>
@@ -537,7 +682,7 @@
         </div>
         <ol class="rank-list" id="hotList"></ol>
       </article>
-      <article class="card">
+      <article class="card ins-cold">
         <div class="card-head">
           <div>
             <h2 class="insight-title"><span class="badge cold" aria-hidden="true"><svg><use href="#i-down"/></svg></span>Running coldest</h2>
@@ -582,10 +727,11 @@
     <section class="card board" aria-labelledby="boardTitle">
       <div class="card-head">
         <div>
-          <h2 id="boardTitle">Leaderboard</h2>
-          <p class="card-sub">Sort by any column. Luck columns are points versus expected and add up to the total.</p>
+          <h2 id="boardTitle">All players</h2>
+          <p class="card-sub board-sub">Tap a column to sort. The luck columns add up to the total.</p>
+          <span class="count" id="count" aria-live="polite"></span>
         </div>
-        <span class="count" id="count" aria-live="polite"></span>
+        <label class="msort select-wrap"><span class="visually-hidden">Sort by</span><select id="msort" class="select"></select></label>
       </div>
       <div class="table-scroll">
         <table class="lb">
@@ -594,6 +740,7 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
+      <ol class="mlist" id="mlist"></ol>
       <div class="table-empty" id="tableEmpty" hidden>
         <p>No players match these filters.</p>
         <button type="button" class="btn" id="emptyReset">Reset filters</button>
@@ -607,8 +754,7 @@
     <section class="card method" aria-labelledby="methodTitle" id="method">
       <div class="card-head">
         <div>
-          <h2 id="methodTitle">How this works</h2>
-          <p class="card-sub">Scoring, model and validation</p>
+          <h2 id="methodTitle">About the numbers</h2>
         </div>
       </div>
       <div class="method-grid" id="methodBody"></div>
@@ -639,12 +785,14 @@ const DATA = /*__EXPLORER_DATA__*/null;
   const PAGE = 50;
   const root = document.documentElement;
   const mq = window.matchMedia("(max-width: 1023px)");
+  const mqPhone = window.matchMedia("(max-width: 759px)");
 
-  const state = { pos: "ALL", mode: "fp", view: "luck", minOpps: 25, sortKey: "dfp", sortDir: -1, q: "", selected: null, showAll: false };
+  const state = { pos: "ALL", team: "ALL", mode: "fp", view: "luck", minOpps: 25, sortKey: "dfp", sortDir: -1, q: "", selected: null, showAll: false };
 
   const players = DATA.players;
   const byId = {};
-  players.forEach(function (p) { byId[p.id] = p; });
+  players.forEach(function (p) { byId[p.id] = p; p.teams = String(p.team).split("/"); });
+  const TEAMS = Array.from(new Set([].concat.apply([], players.map(function (p) { return p.teams; })))).sort();
   const weeksById = {};
   let maxWeek = 0;
   DATA.weeks.forEach(function (w) {
@@ -743,6 +891,66 @@ const DATA = /*__EXPLORER_DATA__*/null;
     setPressed(posSeg, "pos", p);
     render();
   }
+  $("team").insertAdjacentHTML("beforeend", TEAMS.map(function (t) {
+    return '<option value="' + esc(t) + '">' + esc(t) + "</option>";
+  }).join(""));
+  $("team").addEventListener("change", function (e) {
+    state.team = e.target.value;
+    state.showAll = false;
+    render();
+  });
+
+  // Phone: filters live in a bottom sheet behind the Filters button
+  let fpLastFocus = null;
+  function openFilters() {
+    fpLastFocus = document.activeElement;
+    $("filters").classList.add("panel-open");
+    $("filterToggle").setAttribute("aria-expanded", "true");
+    $("filterPanel").setAttribute("role", "dialog");
+    $("filterPanel").setAttribute("aria-modal", "true");
+    document.body.classList.add("sheet-open");
+    setTimeout(function () { $("fpClose").focus({ preventScroll: true }); }, 30);
+  }
+  function closeFilters() {
+    if (!$("filters").classList.contains("panel-open")) return;
+    $("filters").classList.remove("panel-open");
+    $("filterToggle").setAttribute("aria-expanded", "false");
+    $("filterPanel").removeAttribute("role");
+    $("filterPanel").removeAttribute("aria-modal");
+    document.body.classList.remove("sheet-open");
+    if (fpLastFocus && fpLastFocus.focus) fpLastFocus.focus({ preventScroll: true });
+  }
+  $("filterToggle").addEventListener("click", openFilters);
+  $("fpClose").addEventListener("click", closeFilters);
+  $("fpDone").addEventListener("click", closeFilters);
+  $("fbackdrop").addEventListener("click", closeFilters);
+  mqPhone.addEventListener("change", function () { if (!mqPhone.matches) closeFilters(); });
+  $("activeRow").addEventListener("click", function (e) {
+    const b = e.target.closest("button[data-clear]");
+    if (!b) return;
+    const what = b.dataset.clear;
+    if (what === "team") { state.team = "ALL"; $("team").value = "ALL"; }
+    if (what === "q") { state.q = ""; $("search").value = ""; }
+    if (what === "mode") { setMode("fp"); return; }
+    if (what === "opps") { state.minOpps = POS_DEFAULT_MIN[state.pos]; $("opp").value = String(state.minOpps); }
+    state.showAll = false;
+    render();
+  });
+
+  $("insTabs").querySelectorAll("button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      $("insights").dataset.tab = btn.dataset.tab;
+      setPressed($("insTabs"), "tab", btn.dataset.tab);
+    });
+  });
+
+  function setMode(m) {
+    state.mode = m;
+    state.sortKey = state.mode === "fp" ? "dfp" : "dtd";
+    state.sortDir = -1;
+    setPressed($("modeSeg"), "mode", state.mode);
+    render();
+  }
   $("modeSeg").querySelectorAll("button").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state.mode = btn.dataset.mode;
@@ -773,6 +981,8 @@ const DATA = /*__EXPLORER_DATA__*/null;
   function resetFilters() {
     $("search").value = "";
     state.q = "";
+    state.team = "ALL";
+    $("team").value = "ALL";
     setPos("ALL");
   }
   $("resetBtn").addEventListener("click", resetFilters);
@@ -787,6 +997,7 @@ const DATA = /*__EXPLORER_DATA__*/null;
     const q = state.q;
     return players.filter(function (p) {
       if (state.pos !== "ALL" && p.pos !== state.pos) return false;
+      if (state.team !== "ALL" && p.teams.indexOf(state.team) === -1) return false;
       if (p.opps < state.minOpps) return false;
       if (q) {
         const hay = (p.name + " " + p.team + " " + p.pos).toLowerCase();
@@ -810,18 +1021,34 @@ const DATA = /*__EXPLORER_DATA__*/null;
     $("oppVal").textContent = String(state.minOpps);
     $("oppHint").textContent = state.pos === "QB"
       ? "Pass attempts (non-sack throws)"
-      : (state.pos === "ALL" ? "Rushes + targets; pass attempts for QBs" : "Rushes + targets");
+      : (state.pos === "ALL" ? "Rushes + targets (QBs: attempts)" : "Rushes + targets");
     currentRows = sortRows(filtered());
     // Keep the panel in step with the filters: if the open player was filtered out, show the new top row
     if (currentRows.length && !currentRows.some(function (p) { return p.id === state.selected; })) {
       state.selected = currentRows[0].id;
       if (mq.matches) closeSheet();
     }
+    renderFilterSummary(currentRows);
     renderInsights(currentRows);
     renderChartText();
     drawScatter(currentRows);
     drawTable(currentRows);
     if (state.selected) renderDetail(state.selected, false);
+  }
+
+  function renderFilterSummary(rows) {
+    const chips = [];
+    if (state.team !== "ALL") chips.push(["team", state.team]);
+    if (state.q) chips.push(["q", "\u201C" + state.q + "\u201D"]);
+    if (state.mode === "td") chips.push(["mode", "Touchdowns"]);
+    if (state.minOpps !== POS_DEFAULT_MIN[state.pos]) chips.push(["opps", state.minOpps + "+ " + (state.pos === "QB" ? "attempts" : "opps")]);
+    $("activeRow").innerHTML = chips.map(function (c) {
+      return '<button type="button" class="achip" data-clear="' + c[0] + '" aria-label="Remove filter ' + esc(c[1]) + '">' + esc(c[1]) + '<span aria-hidden="true">\u00D7</span></button>';
+    }).join("");
+    $("activeRow").hidden = chips.length === 0;
+    $("fbadge").textContent = String(chips.length);
+    $("fbadge").hidden = chips.length === 0;
+    $("fpDone").textContent = rows.length ? "Show " + rows.length + " player" + (rows.length === 1 ? "" : "s") : "No players match";
   }
 
   function renderChartText() {
@@ -1062,8 +1289,57 @@ const DATA = /*__EXPLORER_DATA__*/null;
     ]
   };
 
+  const MSORT = {
+    fp: [["dfp:-1", "Most above expected"], ["dfp:1", "Most below expected"], ["fp:-1", "Most PPR"], ["xfp:-1", "Most expected PPR"], ["fpg:-1", "PPR per game"], ["name:1", "Name"]],
+    td: [["dtd:-1", "Most TDs above expected"], ["dtd:1", "Most TDs below expected"], ["td:-1", "Most TDs"], ["xtd:-1", "Most expected TDs"], ["name:1", "Name"]]
+  };
+  function syncSortSelect() {
+    const cur = state.sortKey + ":" + state.sortDir;
+    let opts = MSORT[state.mode];
+    if (!opts.some(function (o) { return o[0] === cur; })) {
+      const col = COLS[state.mode].find(function (c) { return c.k === state.sortKey; });
+      opts = [[cur, (col ? col.label : state.sortKey) + (state.sortDir === -1 ? ", high to low" : ", low to high")]].concat(opts);
+    }
+    $("msort").innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("");
+    $("msort").value = cur;
+  }
+  $("msort").addEventListener("change", function (e) {
+    const parts = e.target.value.split(":");
+    state.sortKey = parts[0];
+    state.sortDir = Number(parts[1]);
+    currentRows = sortRows(currentRows);
+    drawTable(currentRows);
+  });
+
+  function drawList(shown) {
+    const k = K();
+    let maxAbs = 1e-9;
+    currentRows.forEach(function (p) { maxAbs = Math.max(maxAbs, Math.abs(p[k.d] || 0)); });
+    $("mlist").innerHTML = shown.map(function (p, i) {
+      const v = p[k.d];
+      const tn = tone(v);
+      const w = Math.max(4, Math.min(100, Math.abs(v) / maxAbs * 100));
+      const line = state.mode === "fp"
+        ? fmt(p.fp, 1) + " PPR vs " + fmt(p.xfp, 1) + " exp."
+        : fmt(p.td, 0) + " TD vs " + fmt(p.xtd, 1) + " exp.";
+      const cur = p.id === state.selected ? ' aria-current="true"' : "";
+      return '<li><button type="button" data-id="' + esc(p.id) + '"' + cur + ">" +
+        '<span class="rk">' + (i + 1) + "</span>" +
+        '<span class="who"><span class="who-name">' + esc(p.name) + "</span>" +
+        '<span class="who-sub">' + shape(p.pos) + esc(p.pos) + " \u00B7 " + esc(p.team) + " \u00B7 " + line + "</span></span>" +
+        '<span class="mval"><b class="' + tn + '">' + fmtS(v, 1) + "</b>" +
+        '<span class="mbar" aria-hidden="true">' + (tn ? '<i class="' + tn + '" style="width:' + w.toFixed(1) + '%"></i>' : "") + "</span></span>" +
+        "</button></li>";
+    }).join("");
+  }
+  $("mlist").addEventListener("click", function (e) {
+    const b = e.target.closest("button[data-id]");
+    if (b) select(b.dataset.id, true);
+  });
+
   function drawTable(rows) {
     const cols = COLS[state.mode];
+    syncSortSelect();
     $("thead").innerHTML = "<tr>" + cols.map(function (c) {
       const active = state.sortKey === c.k;
       const aria = active ? ' aria-sort="' + (state.sortDir === -1 ? "descending" : "ascending") + '"' : "";
@@ -1101,6 +1377,8 @@ const DATA = /*__EXPLORER_DATA__*/null;
       return '<tr tabindex="0" data-id="' + esc(p.id) + '" aria-selected="' + sel + '">' + tds + "</tr>";
     }).join("");
 
+    drawList(shown);
+    $("mlist").hidden = rows.length === 0;
     $("tableEmpty").hidden = rows.length > 0;
     document.querySelector(".table-scroll").hidden = rows.length === 0;
     $("count").textContent = rows.length === players.length
@@ -1140,7 +1418,7 @@ const DATA = /*__EXPLORER_DATA__*/null;
     document.querySelectorAll("#tbody tr").forEach(function (tr) {
       tr.setAttribute("aria-selected", tr.dataset.id === id ? "true" : "false");
     });
-    document.querySelectorAll(".rank-list button").forEach(function (b) {
+    document.querySelectorAll(".rank-list button, #mlist button").forEach(function (b) {
       if (b.dataset.id === id) b.setAttribute("aria-current", "true");
       else b.removeAttribute("aria-current");
     });
@@ -1167,7 +1445,7 @@ const DATA = /*__EXPLORER_DATA__*/null;
     if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
   }
   $("backdrop").addEventListener("click", closeSheet);
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeSheet(); closeFilters(); } });
   mq.addEventListener("change", function () { if (!mq.matches) closeSheet(); drawWeeklyIfAny(); });
 
   function renderDetail(id) {
@@ -1276,7 +1554,7 @@ const DATA = /*__EXPLORER_DATA__*/null;
   /* ---------------- Static content ---------------- */
   function renderStatic() {
     const m = DATA.meta;
-    $("throughChip").textContent = "Through " + m.dataThrough;
+    $("throughChip").textContent = "through " + String(m.dataThrough).replace(/,\s*\d{4}$/, "").replace(/^[A-Za-z]+,\s*/, "");
     $("weeksChip").textContent = "Weeks 1–" + maxWeek;
     $("playersChip").textContent = players.length + " players";
     $("updated").textContent = "Play-by-play last updated " + m.pbpUpdated + ".";
@@ -1286,37 +1564,36 @@ const DATA = /*__EXPLORER_DATA__*/null;
     const hold = v.holdout2025_by_pos || {};
     function c3(x) { return isNum(x) ? Number(x).toFixed(3) : "—"; }
     function n0(x) { return isNum(x) ? Math.round(Number(x)).toLocaleString("en-US") : "—"; }
-    function kpi(label, arr, d) {
+    function tot(label, arr, d) {
       if (!arr) return "";
-      const val = d === 0 ? n0(arr[0]) + " <span>/ " + n0(arr[1]) + "</span>" : fmt(arr[0], d) + " <span>/ " + fmt(arr[1], d) + "</span>";
-      return '<div class="kpi"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + val + "</div></div>";
+      return "<tr><td>" + label + "</td><td>" + (d === 0 ? n0(arr[0]) : fmt(arr[0], d)) + "</td><td>" + (d === 0 ? n0(arr[1]) : fmt(arr[1], d)) + "</td></tr>";
     }
-    function corr(label, text) { return '<div class="kpi"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + text + "</div></div>"; }
+    function chk(label, val) { return "<tr><td>" + label + "</td><td>" + val + "</td></tr>"; }
 
     $("methodBody").innerHTML =
       '<div class="prose">' +
+        "<p>Every carry, target and pass gets an expected value: what an average play from the same spot on the field produced over the last three seasons. Add those up for a player and you get their <strong>expected points</strong>. The gap between that and what they actually scored is the luck number on this page.</p>" +
+        "<p>Luck here isn't a knock or a compliment. Some of the gap is skill, and touchdowns swing a lot over ten games, so most big numbers tend to shrink as the season goes on. Volume is real, though: a player with lots of expected points is earning their chances.</p>" +
         "<p>" + esc(m.dataThroughNote) + "</p>" +
-        "<p>Each play gets an expected outcome from what a league-average play in the same situation produced. Add those up and you get a player's <strong>expected PPR</strong>. The difference from what they actually scored is the luck (plus skill) this page is about.</p>" +
         "<details><summary>Scoring</summary><div><p>" + esc(m.scoring) + "</p>" +
-          "<p>Luck splits into four parts that add up to PPR minus expected PPR: <strong>TD luck</strong> (6 per rushing or receiving TD over expected, 4 per passing TD), <strong>yards luck</strong> (0.1 per rush or receiving yard, 0.04 per passing yard), <strong>catch luck</strong> (1 per reception over expected) and <strong>INT luck</strong> (−2 per interception over expected, so fewer interceptions than expected is positive).</p></div></details>" +
-        "<details><summary>Model</summary><div><p>" + esc(m.method) + "</p></div></details>" +
-        "<details><summary>Limits</summary><div><p>This is a first-pass public model. It doesn't use player identity, coverage or blocking. Touchdowns swing a lot in a 9–10 game sample. Usage isn't luck: lots of end-zone targets is opportunity earned. The latest week is incomplete until Monday Night Football is in the file.</p></div></details>" +
-      "</div>" +
-      "<div>" +
-        '<p class="kpis-title">2026 league totals, actual / expected</p>' +
-        '<div class="kpis">' +
-          kpi("Rush yards", L.rush_yd, 0) + kpi("Receiving yards", L.rec_yd, 0) + kpi("Receptions", L.rec, 0) +
-          kpi("Rush TDs", L.rush_td, 1) + kpi("Pass TDs", L.pass_td, 1) + kpi("Interceptions", L.int, 1) +
-        "</div>" +
-        '<p class="kpis-title">Correlation checks</p>' +
-        '<div class="kpis">' +
-          corr("2025 holdout, all players", c3(v.holdout2025_corr_fp_xfp)) +
-          corr("Holdout QB / RB", c3(hold.QB) + " / " + c3(hold.RB)) +
-          corr("Holdout WR / TE", c3(hold.WR) + " / " + c3(hold.TE)) +
-          corr("2026 xPPR vs actual", c3(v.corr_our_xfp_actual)) +
-          corr("xPPR vs ffopportunity", c3(v.corr_ffopportunity_xfp)) +
-          corr("Luck vs ffopportunity", c3(v.corr_ffopportunity_luck)) +
-        "</div>" +
+          "<p>Luck splits into four parts that add up to the total: touchdowns (6 per rushing or receiving TD over expected, 4 per passing TD), yards (0.1 per rushing or receiving yard, 0.04 per passing yard), catches (1 per reception over expected) and interceptions (−2 per interception over expected, so throwing fewer than expected counts as positive).</p></div></details>" +
+        "<details><summary>The model</summary><div><p>" + esc(m.method) + "</p></div></details>" +
+        "<details><summary>Limits</summary><div><p>It doesn't know who the player is, who's covering them or how well the line blocks. Ten games is a small sample, especially for touchdowns. The latest week is missing Monday night until the data catches up.</p></div></details>" +
+        "<details><summary>Model checks</summary><div>" +
+          "<p>League totals for 2026, actual vs expected:</p>" +
+          '<table class="stat-table"><thead><tr><th scope="col">Stat</th><th scope="col">Actual</th><th scope="col">Expected</th></tr></thead><tbody>' +
+            tot("Rush yards", L.rush_yd, 0) + tot("Receiving yards", L.rec_yd, 0) + tot("Receptions", L.rec, 0) +
+            tot("Rush TDs", L.rush_td, 0) + tot("Pass TDs", L.pass_td, 0) + tot("Interceptions", L.int, 0) +
+          "</tbody></table>" +
+          "<p>Correlation between expected and actual points:</p>" +
+          '<table class="stat-table"><tbody>' +
+            chk("2025 holdout, all players", c3(v.holdout2025_corr_fp_xfp)) +
+            chk("2025 holdout by position (QB, RB, WR, TE)", [c3(hold.QB), c3(hold.RB), c3(hold.WR), c3(hold.TE)].join(", ")) +
+            chk("2026 so far", c3(v.corr_our_xfp_actual)) +
+            chk("Expected points vs ffopportunity", c3(v.corr_ffopportunity_xfp)) +
+            chk("Luck vs ffopportunity", c3(v.corr_ffopportunity_luck)) +
+          "</tbody></table>" +
+        "</div></details>" +
       "</div>";
   }
 
