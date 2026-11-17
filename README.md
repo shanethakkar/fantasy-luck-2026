@@ -2,7 +2,9 @@
 
 An interactive look at which NFL players have outproduced — or underproduced — their opportunity so far in the 2026 season, using a transparent expected-PPR (xPPR / xFP) model and a simpler expected-touchdown (xTD) model. Both are built from public [nflverse](https://github.com/nflverse) play-by-play. A league-average play in the same situation is the baseline. This is not a player-talent rating.
 
-Open [`index.html`](index.html) in a browser (or [`output/fantasy_luck_2026.html`](output/fantasy_luck_2026.html)) to use the explorer. It has position filters, a minimum-opportunity slider, a scatter of expected vs actual PPR (or touchdowns), a sortable leaderboard with luck split into TD / yards / catch / INT components, and a weekly chart when you click a player.
+Open [`index.html`](index.html) in a browser (or [`output/fantasy_luck_2026.html`](output/fantasy_luck_2026.html)) to use the explorer. It opens with the five players running hottest and coldest, then a luck-vs-opportunity chart (or actual vs expected), a player panel that splits each player's luck into TD / yards / catch / INT parts with a week-by-week chart, and a sortable leaderboard. Filters cover position, PPR or touchdowns, a minimum-opportunity slider and name search. It works on phones (the player panel opens as a bottom sheet) and has light and dark themes.
+
+The page is built by `build_explorer.py`, which embeds `output/explorer_data.json` into [`templates/explorer.html`](templates/explorer.html). Edit the template to change the layout or styling, then run `python build_explorer.py`.
 
 GitHub Pages is not enabled on this repository. You can turn it on later if you want the explorer served from the repo.
 

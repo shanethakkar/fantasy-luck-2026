@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026 Fantasy Luck Explorer</title>
+<meta name="description" content="Which NFL players are scoring more, or less, than their opportunity says they should in 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root {
+    color-scheme: light;
+    --page: #f4f4f1;
+    --surface: #ffffff;
+    --surface-2: #f7f7f5;
+    --surface-3: #efeee9;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #6b6a66;
+    --grid: #ecebe6;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --border-strong: rgba(11, 11, 11, 0.18);
+    --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 16px rgba(11, 11, 11, 0.04);
+    --shadow-lg: 0 -8px 40px rgba(11, 11, 11, 0.18);
+
+    /* Diverging luck pair: warm = running hot, cool = running cold */
+    --hot: #e34948;
+    --hot-text: #c2302d;
+    --hot-soft: #fbeceb;
+    --cold: #2a78d6;
+    --cold-text: #1c5cab;
+    --cold-soft: #e8f0fb;
+    --neutral-fill: #d9d8d2;
+
+    /* Position identity (validated all-pairs; shapes are the secondary encoding) */
+    --qb: #6250d6;
+    --rb: #1baf7a;
+    --wr: #eda100;
+    --te: #e87ba4;
+
+    --focus: #2a78d6;
+    --sel: rgba(42, 120, 214, 0.08);
+
+    --radius: 14px;
+    --radius-sm: 8px;
+    --gutter: clamp(16px, 3vw, 32px);
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Type scale (1.2 ratio) */
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.8125rem;
+    --fs-md: 0.9375rem;
+    --fs-lg: 1.125rem;
+    --fs-xl: 1.375rem;
+    --fs-2xl: clamp(1.75rem, 1.2rem + 2.2vw, 2.75rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #111214;
+      --surface: #1d1e21;
+      --surface-2: #232428;
+      --surface-3: #2b2c31;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --muted: #9a9993;
+      --grid: #2a2b2f;
+      --axis: #44454a;
+      --border: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 -8px 40px rgba(0, 0, 0, 0.5);
+      --hot: #e66767;
+      --hot-text: #f08482;
+      --hot-soft: rgba(230, 103, 103, 0.14);
+      --cold: #3987e5;
+      --cold-text: #79b0f0;
+      --cold-soft: rgba(57, 135, 229, 0.16);
+      --neutral-fill: #46474c;
+      --qb: #9085e9;
+      --rb: #199e70;
+      --wr: #c98500;
+      --te: #da669c;
+      --focus: #79b0f0;
+      --sel: rgba(121, 176, 240, 0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #111214;
+    --surface: #1d1e21;
+    --surface-2: #232428;
+    --surface-3: #2b2c31;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #9a9993;
+    --grid: #2a2b2f;
+    --axis: #44454a;
+    --border: rgba(255, 255, 255, 0.09);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    --hot: #e66767;
+    --hot-text: #f08482;
+    --hot-soft: rgba(230, 103, 103, 0.14);
+    --cold: #3987e5;
+    --cold-text: #79b0f0;
+    --cold-soft: rgba(57, 135, 229, 0.16);
+    --neutral-fill: #46474c;
+    --qb: #9085e9;
+    --rb: #199e70;
+    --wr: #c98500;
+    --te: #da669c;
+    --focus: #79b0f0;
+    --sel: rgba(121, 176, 240, 0.10);
+  }
+
+  /* ---------- Base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--cold-text); text-underline-offset: 2px; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+  .visually-hidden {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .hot { color: var(--hot-text); }
+  .cold { color: var(--cold-text); }
+
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- Header ---------- */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 18px 0 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: var(--fs-sm); color: var(--ink-2); letter-spacing: 0.01em; }
+  .brand-mark { width: 22px; height: 22px; }
+  .icon-btn {
+    appearance: none; border: 1px solid var(--border); background: var(--surface);
+    width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+    cursor: pointer; color: var(--ink-2);
+  }
+  .icon-btn:hover { color: var(--ink); border-color: var(--border-strong); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .hero { padding: 28px 0 24px; display: grid; gap: 14px; max-width: 58rem; }
+  .hero h1 {
+    margin: 0; font-size: var(--fs-2xl); line-height: 1.08; letter-spacing: -0.03em; font-weight: 750;
+    text-wrap: balance;
+  }
+  .hero h1 span { color: var(--muted); font-weight: 650; }
+  .lede { margin: 0; color: var(--ink-2); font-size: var(--fs-lg); line-height: 1.5; max-width: 44rem; text-wrap: pretty; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 999px; background: var(--surface); border: 1px solid var(--border);
+    font-size: var(--fs-xs); color: var(--ink-2); font-weight: 500;
+  }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rb); }
+
+  /* ---------- Filter bar ---------- */
+  .filters {
+    position: relative; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: end; gap: 14px 20px;
+    padding: 14px 16px; margin-bottom: 20px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    backdrop-filter: saturate(1.4) blur(12px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  @media (min-width: 760px) {
+    .filters { position: sticky; top: 10px; }
+  }
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field-label { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+  .seg {
+    display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px;
+    background: var(--surface-3); max-width: 100%; overflow-x: auto; scrollbar-width: none;
+  }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 6px 12px; border-radius: 8px; font-size: var(--fs-sm); font-weight: 600;
+    color: var(--ink-2); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+    min-height: 32px;
+  }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface); color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 0 0 1px var(--border);
+  }
+  .seg svg { width: 10px; height: 10px; flex: none; }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-row output {
+    min-width: 3.2ch; text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; font-size: var(--fs-sm);
+  }
+  input[type=range] { width: 170px; accent-color: var(--ink); margin: 0; height: 32px; }
+  .field-hint { font-size: var(--fs-xs); color: var(--muted); }
+  .search {
+    position: relative; display: flex; align-items: center;
+  }
+  .search svg { position: absolute; left: 10px; width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+  .search input {
+    appearance: none; width: 220px; max-width: 100%;
+    border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface);
+    padding: 7px 10px 7px 32px; font: 500 var(--fs-sm) var(--font); color: var(--ink); min-height: 36px;
+  }
+  .search input::placeholder { color: var(--muted); }
+  .filters .spacer { flex: 1; }
+  .reset-btn {
+    appearance: none; border: 0; background: none; cursor: pointer; color: var(--muted);
+    font-size: var(--fs-sm); font-weight: 600; padding: 8px 4px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .reset-btn:hover { color: var(--ink); }
+  @media (max-width: 759px) {
+    .filters { padding: 12px; gap: 12px 14px; }
+    .field-pos, .field-search { flex: 1 1 100%; }
+    .seg { display: flex; }
+    .field-pos .seg button { flex: 1; justify-content: center; }
+    .search input { width: 100%; }
+    input[type=range] { width: 140px; }
+    .filters .spacer, .reset-btn { display: none; }
+    .field-hint { display: none; }
+    .lede { font-size: var(--fs-md); }
+    .hero { padding: 20px 0 18px; gap: 10px; }
+    .insights .rank-list li button { grid-template-columns: 1.1rem minmax(0, 1fr) 44px 3.8rem; gap: 8px; }
+    .lb .c-player { min-width: 168px; padding-left: 12px; }
+    .lb .mini { width: 40px; }
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); min-width: 0;
+  }
+  .card-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; padding: 16px 18px 0; }
+  .card-head h2, .card-head h3 { margin: 0; font-size: var(--fs-lg); font-weight: 680; letter-spacing: -0.015em; line-height: 1.3; }
+  .card-sub { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--muted); }
+  .card-body { padding: 12px 18px 16px; }
+
+  /* ---------- Insights ---------- */
+  .insights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 860px) { .insights { grid-template-columns: 1fr; } }
+  .insight-title { display: flex; align-items: center; gap: 8px; }
+  .insight-title .badge { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; }
+  .insight-title .badge svg { width: 12px; height: 12px; }
+  .badge.hot { background: var(--hot-soft); color: var(--hot-text); }
+  .badge.cold { background: var(--cold-soft); color: var(--cold-text); }
+  .rank-list { list-style: none; margin: 0; padding: 4px 8px 10px; }
+  .rank-list li button {
+    appearance: none; width: 100%; border: 0; background: none; cursor: pointer; text-align: left;
+    display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) minmax(60px, 34%) 4.2rem; align-items: center; gap: 10px;
+    padding: 7px 10px; border-radius: 10px;
+  }
+  .rank-list li button:hover { background: var(--surface-2); }
+  .rank-list li button[aria-current="true"] { background: var(--sel); }
+  .rank-n { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .who { min-width: 0; }
+  .who-name { display: block; font-weight: 600; font-size: var(--fs-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .who-sub { display: flex; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--muted); }
+  .who-sub svg { width: 9px; height: 9px; flex: none; }
+  .meter { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+  .meter i { display: block; height: 100%; border-radius: 3px; }
+  .meter.hot i { background: var(--hot); }
+  .meter.cold i { background: var(--cold); margin-left: auto; }
+  .rank-v { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .empty-mini { padding: 18px; color: var(--muted); font-size: var(--fs-sm); }
+
+  /* ---------- Main grid: chart + detail ---------- */
+  .main-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(340px, 1fr); gap: 16px; align-items: stretch; }
+  .chart-card { display: flex; flex-direction: column; }
+  @media (max-width: 1023px) { .main-grid { grid-template-columns: 1fr; } }
+  .chart-card .card-head { flex-wrap: wrap; }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-xs); color: var(--ink-2); padding: 10px 18px 0; }
+  .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .chart-legend svg { width: 10px; height: 10px; }
+  #scatter { width: 100%; height: 500px; flex: 1 1 auto; min-height: 500px; }
+  @media (max-width: 759px) { #scatter { height: 380px; } }
+  .chart-empty, .chart-fallback {
+    display: none; place-items: center; text-align: center; height: 300px; color: var(--muted); padding: 24px;
+  }
+  .chart-empty.show, .chart-fallback.show { display: grid; }
+  .chart-note { padding: 0 18px 14px; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+
+  /* ---------- Detail panel / sheet ---------- */
+  .detail { overscroll-behavior: contain; }
+  .detail-empty { padding: 40px 24px; text-align: center; color: var(--muted); }
+  .detail-empty svg { width: 32px; height: 32px; margin-bottom: 8px; color: var(--axis); }
+  .detail-head { padding: 18px 18px 0; display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+  .detail-name { margin: 0; font-size: var(--fs-xl); font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; }
+  .detail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: var(--fs-sm); color: var(--ink-2); }
+  .pos-tag {
+    display: inline-flex; align-items: center; gap: 5px; font-weight: 650; font-size: var(--fs-xs);
+    padding: 2px 8px 2px 6px; border-radius: 999px; background: var(--surface-3); color: var(--ink);
+  }
+  .pos-tag svg { width: 9px; height: 9px; }
+  .verdict {
+    display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 650;
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .verdict svg { width: 10px; height: 10px; }
+  .verdict.hot { background: var(--hot-soft); }
+  .verdict.cold { background: var(--cold-soft); }
+  .verdict.even { background: var(--surface-3); color: var(--ink-2); }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 16px 18px 4px; }
+  .tile { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+  .tile-label { font-size: var(--fs-xs); color: var(--muted); font-weight: 500; }
+  .tile-value { font-size: var(--fs-xl); font-weight: 750; letter-spacing: -0.02em; line-height: 1.25; }
+  .tile-sub { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .detail-section { padding: 14px 18px 4px; }
+  .detail-section h4 { margin: 0 0 8px; font-size: var(--fs-sm); font-weight: 650; color: var(--ink); }
+  .detail-section h4 small { font-weight: 500; color: var(--muted); }
+  .breakdown { display: grid; gap: 6px; }
+  .brow { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) 3.6rem; gap: 10px; align-items: center; font-size: var(--fs-sm); }
+  .brow-label { color: var(--ink-2); }
+  .brow-v { text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .dbar { position: relative; height: 14px; }
+  .dbar::before { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--axis); }
+  .dbar i { position: absolute; top: 2px; height: 10px; border-radius: 3px; min-width: 1px; }
+  .dbar i.hot { background: var(--hot); left: 50%; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .dbar i.cold { background: var(--cold); right: 50%; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .brow.total { border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; font-weight: 650; }
+  .brow.total .brow-label { color: var(--ink); }
+  .stat-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .stat-table th, .stat-table td { padding: 6px 0; text-align: right; border-bottom: 1px solid var(--border); }
+  .stat-table th { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); }
+  .stat-table th:first-child, .stat-table td:first-child { text-align: left; color: var(--ink-2); }
+  .stat-table tr:last-child td { border-bottom: 0; }
+  .wk-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--fs-xs); color: var(--ink-2); margin-bottom: 4px; }
+  .wk-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .wk-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .wk-legend i.exp { height: 2px; width: 12px; border-radius: 1px; background: var(--ink); }
+  #weekly { width: 100%; height: 210px; }
+  .detail-foot { padding: 6px 18px 18px; font-size: var(--fs-xs); color: var(--muted); }
+  .sheet-close { display: none; }
+  .sheet-handle { display: none; }
+  .backdrop { display: none; }
+
+  @media (max-width: 1023px) {
+    .detail {
+      position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 60;
+      max-height: 88vh; max-height: 88dvh; overflow: auto; border-radius: 18px 18px 0 0; border-bottom: 0;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(105%); transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+      padding-bottom: env(safe-area-inset-bottom);
+      visibility: hidden;
+    }
+    .detail.open { transform: translateY(0); visibility: visible; }
+    .sheet-handle { display: block; width: 36px; height: 4px; border-radius: 2px; background: var(--axis); margin: 8px auto 0; }
+    .sheet-close { display: grid; }
+    .backdrop {
+      display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,0.35);
+      opacity: 0; pointer-events: none; transition: opacity 200ms;
+    }
+    .backdrop.open { opacity: 1; pointer-events: auto; }
+    body.sheet-open { overflow: hidden; }
+    .detail-empty-wrap { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .detail, .backdrop { transition: none; }
+  }
+
+  /* ---------- Leaderboard ---------- */
+  .board { margin-top: 16px; }
+  .board .card-head { align-items: end; flex-wrap: wrap; padding-bottom: 12px; }
+  .count { font-size: var(--fs-sm); color: var(--muted); }
+  .table-scroll { overflow-x: auto; border-top: 1px solid var(--border); }
+  table.lb { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .lb th, .lb td { padding: 0 10px; height: 48px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .lb thead th {
+    position: sticky; top: 0; z-index: 2; height: 40px;
+    font-size: var(--fs-xs); font-weight: 600; color: var(--muted); background: var(--surface-2);
+  }
+  .lb th button {
+    appearance: none; border: 0; background: none; cursor: pointer; padding: 6px 0; font: inherit; color: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .lb th button:hover, .lb th[aria-sort] button { color: var(--ink); }
+  .lb th .arr { width: 8px; display: inline-block; font-size: 9px; }
+  .lb .c-player { text-align: left; position: sticky; left: 0; z-index: 1; min-width: 210px; padding-left: 18px; }
+  .lb thead .c-player { z-index: 3; }
+  .lb td.c-player::after, .lb th.c-player::after {
+    content: ""; position: absolute; top: 0; bottom: 0; right: -1px; width: 1px; background: var(--border);
+  }
+  .lb .grp { border-left: 1px solid var(--border); }
+  .lb tbody tr { cursor: pointer; }
+  .lb tbody tr:hover td { background: var(--surface-2); }
+  .lb tbody tr[aria-selected="true"] td { background: var(--sel); }
+  .lb tbody tr[aria-selected="true"] td.c-player { box-shadow: inset 3px 0 0 var(--focus); }
+  .lb tbody tr:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .lb .pcell { display: flex; align-items: center; gap: 10px; }
+  .lb .rk { color: var(--muted); width: 2.2ch; text-align: right; font-size: var(--fs-xs); }
+  .lb .pname { font-weight: 600; color: var(--ink); font-size: var(--fs-sm); }
+  .lb .luckcell { display: inline-flex; align-items: center; gap: 10px; justify-content: flex-end; }
+  .lb .luckcell b { font-weight: 700; min-width: 4.2ch; }
+  .lb .mini { position: relative; width: 64px; height: 10px; }
+  .lb .mini::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--axis); }
+  .lb .mini i { position: absolute; top: 1px; height: 8px; border-radius: 2px; }
+  .lb .mini i.hot { left: 50%; background: var(--hot); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .lb .mini i.cold { right: 50%; background: var(--cold); border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .lb .dim { color: var(--muted); }
+  .board-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 18px 16px; }
+  .board-foot p { margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+  .btn {
+    appearance: none; border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink);
+    border-radius: 10px; padding: 8px 14px; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; min-height: 36px;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .table-empty { padding: 40px 18px; text-align: center; color: var(--muted); }
+  .table-empty p { margin: 0 0 12px; }
+
+  /* ---------- Methodology ---------- */
+  .method { margin-top: 16px; }
+  .method-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; padding: 4px 18px 18px; }
+  @media (max-width: 860px) { .method-grid { grid-template-columns: 1fr; } }
+  .prose { color: var(--ink-2); font-size: var(--fs-sm); }
+  .prose p { margin: 0 0 10px; max-width: 62ch; }
+  .prose strong { color: var(--ink); font-weight: 650; }
+  .prose details { border-top: 1px solid var(--border); padding: 10px 0; }
+  .prose details:last-child { border-bottom: 1px solid var(--border); }
+  .prose summary { cursor: pointer; font-weight: 650; color: var(--ink); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .prose summary::-webkit-details-marker { display: none; }
+  .prose summary::after { content: "+"; color: var(--muted); font-weight: 500; font-size: 1.1em; }
+  .prose details[open] summary::after { content: "–"; }
+  .prose details > div { padding-top: 8px; }
+  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kpi { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .kpi-label { font-size: var(--fs-xs); color: var(--muted); }
+  .kpi-value { font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-md); }
+  .kpi-value span { color: var(--muted); font-weight: 500; }
+  .kpis-title { font-size: var(--fs-sm); font-weight: 650; margin: 0 0 8px; }
+  .kpis + .kpis-title { margin-top: 16px; }
+
+  .warn {
+    display: none; margin: 0 0 16px; padding: 12px 14px; border-radius: 10px;
+    background: var(--hot-soft); color: var(--hot-text); font-size: var(--fs-sm); font-weight: 500;
+  }
+  .warn.show { display: block; }
+  footer { padding: 24px 0 48px; color: var(--muted); font-size: var(--fs-xs); }
+  footer p { margin: 0 0 4px; max-width: 80ch; }
+</style>
+</head>
+<body>
+  <!-- Shape sprites: positions are encoded by color AND shape -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="s-QB" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4.5" fill="var(--qb)"/></symbol>
+    <symbol id="s-RB" viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="1" fill="var(--rb)"/></symbol>
+    <symbol id="s-WR" viewBox="0 0 10 10"><path d="M5 0.3 9.7 5 5 9.7 0.3 5Z" fill="var(--wr)"/></symbol>
+    <symbol id="s-TE" viewBox="0 0 10 10"><path d="M5 0.8 9.6 9.2H0.4Z" fill="var(--te)"/></symbol>
+    <symbol id="i-up" viewBox="0 0 12 12"><path d="M6 2 11 9H1Z" fill="currentColor"/></symbol>
+    <symbol id="i-down" viewBox="0 0 12 12"><path d="M6 10 1 3H11Z" fill="currentColor"/></symbol>
+    <symbol id="i-even" viewBox="0 0 12 12"><rect x="1" y="5" width="10" height="2" rx="1" fill="currentColor"/></symbol>
+  </svg>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <rect width="24" height="24" rx="6" fill="var(--ink)"/>
+          <path d="M5 18 19 6" stroke="var(--surface)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="1.5 2.5"/>
+          <circle cx="9" cy="10" r="2.2" fill="var(--hot)"/><circle cx="15.5" cy="15" r="2.2" fill="var(--cold)"/>
+        </svg>
+        Fantasy Luck Explorer
+      </div>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch to dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" id="themeIcon"></svg>
+      </button>
+    </div>
+
+    <header class="hero">
+      <h1>Who's outscoring their opportunity <span>in 2026?</span></h1>
+      <p class="lede">Every rush and target is priced at what a league-average play in the same spot usually scores. The gap between actual and expected PPR is luck plus skill, not a talent rating.</p>
+      <div class="meta-row">
+        <span class="chip"><span class="dot" aria-hidden="true"></span><span id="throughChip">Through Sunday, November 15, 2026</span></span>
+        <span class="chip" id="weeksChip">Weeks 1–10</span>
+        <span class="chip" id="playersChip">534 players</span>
+      </div>
+    </header>
+
+    <div id="cdnWarn" class="warn" role="alert">The chart library didn't load, so the charts are hidden. The tables still work. Check your connection and refresh to see the charts.</div>
+
+    <section class="filters" aria-label="Filters">
+      <div class="field field-pos">
+        <span class="field-label" id="posLabel">Position</span>
+        <div class="seg" id="posSeg" role="group" aria-labelledby="posLabel"></div>
+      </div>
+      <div class="field">
+        <span class="field-label" id="modeLabel">Measure</span>
+        <div class="seg" id="modeSeg" role="group" aria-labelledby="modeLabel">
+          <button type="button" data-mode="fp" aria-pressed="true">PPR points</button>
+          <button type="button" data-mode="td" aria-pressed="false">Touchdowns</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="opp">Minimum opportunities</label>
+        <div class="range-row">
+          <input type="range" id="opp" min="0" max="300" step="5" value="25" aria-describedby="oppHint">
+          <output id="oppVal" for="opp">25</output>
+        </div>
+        <span class="field-hint" id="oppHint">Rushes + targets; pass attempts for QBs</span>
+      </div>
+      <div class="field field-search">
+        <label class="field-label" for="search">Find a player</label>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="search" type="search" placeholder="Name or team" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button type="button" class="reset-btn" id="resetBtn">Reset filters</button>
+    </section>
+
+    <section class="insights" aria-label="Biggest gaps">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="insight-title"><span class="badge hot" aria-hidden="true"><svg><use href="#i-up"/></svg></span>Running hottest</h2>
+            <p class="card-sub" id="hotSub">Most PPR above expected</p>
+          </div>
+        </div>
+        <ol class="rank-list" id="hotList"></ol>
+      </article>
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="insight-title"><span class="badge cold" aria-hidden="true"><svg><use href="#i-down"/></svg></span>Running coldest</h2>
+            <p class="card-sub" id="coldSub">Most PPR below expected</p>
+          </div>
+        </div>
+        <ol class="rank-list" id="coldList"></ol>
+      </article>
+    </section>
+
+    <div class="main-grid">
+      <section class="card chart-card" aria-labelledby="chartTitle">
+        <div class="card-head">
+          <div>
+            <h2 id="chartTitle">Luck vs opportunity</h2>
+            <p class="card-sub" id="chartSub">Above the line: scoring more than their usage predicts.</p>
+          </div>
+          <div class="seg" id="viewSeg" role="group" aria-label="Chart view">
+            <button type="button" data-view="luck" aria-pressed="true">Luck</button>
+            <button type="button" data-view="ava" aria-pressed="false">Actual vs expected</button>
+          </div>
+        </div>
+        <div class="chart-legend" id="legend"></div>
+        <div id="scatter" role="img" aria-label="Scatter chart of players. Use the leaderboard below for the same data as a table."></div>
+        <div class="chart-empty" id="chartEmpty"><div>No players match these filters.</div></div>
+        <div class="chart-fallback" id="chartFallback"><div>Charts need the Plotly library, which didn't load. The leaderboard below has every number.</div></div>
+        <p class="chart-note">Hover a point for details. Click one to open the player.</p>
+      </section>
+
+      <div class="backdrop" id="backdrop"></div>
+      <aside class="card detail" id="detail" aria-label="Player detail" tabindex="-1">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div id="detailBody">
+          <div class="detail-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+            <p>Pick a player from the chart or leaderboard to see where their points came from.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="card board" aria-labelledby="boardTitle">
+      <div class="card-head">
+        <div>
+          <h2 id="boardTitle">Leaderboard</h2>
+          <p class="card-sub">Sort by any column. Luck columns are points versus expected and add up to the total.</p>
+        </div>
+        <span class="count" id="count" aria-live="polite"></span>
+      </div>
+      <div class="table-scroll">
+        <table class="lb">
+          <caption class="visually-hidden">Players with actual and expected fantasy production</caption>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-empty" id="tableEmpty" hidden>
+        <p>No players match these filters.</p>
+        <button type="button" class="btn" id="emptyReset">Reset filters</button>
+      </div>
+      <div class="board-foot" id="boardFoot">
+        <p>Positive luck in <span class="hot">red ▲</span>, negative in <span class="cold">blue ▼</span>.</p>
+        <button type="button" class="btn" id="moreBtn" hidden></button>
+      </div>
+    </section>
+
+    <section class="card method" aria-labelledby="methodTitle" id="method">
+      <div class="card-head">
+        <div>
+          <h2 id="methodTitle">How this works</h2>
+          <p class="card-sub">Scoring, model and validation</p>
+        </div>
+      </div>
+      <div class="method-grid" id="methodBody"></div>
+    </section>
+
+    <footer>
+      <p>Data: nflverse / nflfastR play-by-play (CC BY 4.0). Expected points from a gradient-boosting model trained on 2023–2025 regular-season plays.</p>
+      <p id="updated"></p>
+    </footer>
+  </div>
+
+<script>
+const DATA = /*__EXPLORER_DATA__*/null;
+(function () {
+  "use strict";
+
+  /* ---------------- Setup ---------------- */
+  const HAS_PLOTLY = typeof Plotly !== "undefined";
+  if (!HAS_PLOTLY) {
+    document.getElementById("cdnWarn").classList.add("show");
+    document.getElementById("chartFallback").classList.add("show");
+    document.getElementById("scatter").style.display = "none";
+  }
+
+  const POSITIONS = ["QB", "RB", "WR", "TE"];
+  const SYMBOLS = { QB: "circle", RB: "square", WR: "diamond", TE: "triangle-up" };
+  const POS_DEFAULT_MIN = { ALL: 25, QB: 150, RB: 40, WR: 25, TE: 25 };
+  const PAGE = 50;
+  const root = document.documentElement;
+  const mq = window.matchMedia("(max-width: 1023px)");
+
+  const state = { pos: "ALL", mode: "fp", view: "luck", minOpps: 25, sortKey: "dfp", sortDir: -1, q: "", selected: null, showAll: false };
+
+  const players = DATA.players;
+  const byId = {};
+  players.forEach(function (p) { byId[p.id] = p; });
+  const weeksById = {};
+  let maxWeek = 0;
+  DATA.weeks.forEach(function (w) {
+    (weeksById[w.id] = weeksById[w.id] || []).push(w);
+    if (w.w > maxWeek) maxWeek = w.w;
+  });
+  Object.keys(weeksById).forEach(function (id) { weeksById[id].sort(function (a, b) { return a.w - b.w; }); });
+
+  /* ---------------- Helpers ---------------- */
+  const $ = function (id) { return document.getElementById(id); };
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function isNum(n) { return n !== null && n !== undefined && !Number.isNaN(Number(n)); }
+  function fmt(n, d) { return isNum(n) ? Number(n).toFixed(d) : "—"; }
+  function fmtS(n, d) {
+    if (!isNum(n)) return "—";
+    const v = Number(n);
+    const s = Math.abs(v).toFixed(d);
+    if (Number(s) === 0) return s;
+    return (v > 0 ? "+" : "−") + s;
+  }
+  function tone(v, eps) {
+    eps = eps === undefined ? 0.05 : eps;
+    if (v > eps) return "hot";
+    if (v < -eps) return "cold";
+    return "";
+  }
+  function shape(pos) { return '<svg aria-hidden="true"><use href="#s-' + pos + '"/></svg>'; }
+  function shortName(name) {
+    const parts = name.split(" ");
+    if (parts.length < 2) return name;
+    const suffix = /^(Jr\.?|Sr\.?|II|III|IV|V)$/.test(parts[parts.length - 1]) ? parts.pop() : "";
+    return parts[0].charAt(0) + ". " + parts.slice(1).join(" ") + (suffix ? " " + suffix : "");
+  }
+  function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function oppLabel(pos) { return pos === "QB" ? "pass attempts" : "opportunities"; }
+  const K = function () {
+    return state.mode === "fp"
+      ? { x: "xfp", y: "fp", d: "dfp", unit: "PPR", eps: 3 }
+      : { x: "xtd", y: "td", d: "dtd", unit: "TD", eps: 0.5 };
+  };
+
+  /* ---------------- Theme ---------------- */
+  const ICON_MOON = '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/>';
+  const ICON_SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  function currentTheme() {
+    const t = root.getAttribute("data-theme");
+    if (t) return t;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function syncThemeBtn() {
+    const dark = currentTheme() === "dark";
+    $("themeIcon").innerHTML = dark ? ICON_SUN : ICON_MOON;
+    $("themeBtn").setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+  }
+  try {
+    const saved = localStorage.getItem("flx-theme");
+    if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  } catch (e) { /* storage unavailable */ }
+  syncThemeBtn();
+  $("themeBtn").addEventListener("click", function () {
+    const next = currentTheme() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("flx-theme", next); } catch (e) { /* ignore */ }
+    syncThemeBtn();
+    drawCharts();
+  });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+    if (!root.getAttribute("data-theme")) { syncThemeBtn(); drawCharts(); }
+  });
+
+  /* ---------------- Controls ---------------- */
+  const posSeg = $("posSeg");
+  ["ALL"].concat(POSITIONS).forEach(function (p) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.pos = p;
+    b.setAttribute("aria-pressed", p === "ALL" ? "true" : "false");
+    b.innerHTML = (p === "ALL" ? "" : shape(p)) + (p === "ALL" ? "All" : p);
+    b.addEventListener("click", function () { setPos(p); });
+    posSeg.appendChild(b);
+  });
+  function setPressed(container, attr, val) {
+    container.querySelectorAll("button").forEach(function (el) {
+      el.setAttribute("aria-pressed", el.dataset[attr] === val ? "true" : "false");
+    });
+  }
+  function setPos(p) {
+    state.pos = p;
+    state.minOpps = POS_DEFAULT_MIN[p];
+    $("opp").value = String(state.minOpps);
+    state.showAll = false;
+    setPressed(posSeg, "pos", p);
+    render();
+  }
+  $("modeSeg").querySelectorAll("button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.mode = btn.dataset.mode;
+      state.sortKey = state.mode === "fp" ? "dfp" : "dtd";
+      state.sortDir = -1;
+      setPressed($("modeSeg"), "mode", state.mode);
+      render();
+    });
+  });
+  $("viewSeg").querySelectorAll("button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.view = btn.dataset.view;
+      setPressed($("viewSeg"), "view", state.view);
+      renderChartText();
+      drawScatter(currentRows);
+    });
+  });
+  $("opp").addEventListener("input", function (e) {
+    state.minOpps = Number(e.target.value);
+    state.showAll = false;
+    render();
+  });
+  $("search").addEventListener("input", function (e) {
+    state.q = e.target.value.trim().toLowerCase();
+    state.showAll = false;
+    render();
+  });
+  function resetFilters() {
+    $("search").value = "";
+    state.q = "";
+    setPos("ALL");
+  }
+  $("resetBtn").addEventListener("click", resetFilters);
+  $("emptyReset").addEventListener("click", resetFilters);
+  $("moreBtn").addEventListener("click", function () {
+    state.showAll = !state.showAll;
+    drawTable(currentRows);
+  });
+
+  /* ---------------- Data ---------------- */
+  function filtered() {
+    const q = state.q;
+    return players.filter(function (p) {
+      if (state.pos !== "ALL" && p.pos !== state.pos) return false;
+      if (p.opps < state.minOpps) return false;
+      if (q) {
+        const hay = (p.name + " " + p.team + " " + p.pos).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function sortRows(rows) {
+    const k = state.sortKey, dir = state.sortDir;
+    return rows.slice().sort(function (a, b) {
+      const av = a[k], bv = b[k];
+      if (typeof av === "string") return dir * av.localeCompare(bv);
+      return dir * ((av || 0) - (bv || 0));
+    });
+  }
+  let currentRows = [];
+
+  /* ---------------- Render ---------------- */
+  function render() {
+    $("oppVal").textContent = String(state.minOpps);
+    $("oppHint").textContent = state.pos === "QB"
+      ? "Pass attempts (non-sack throws)"
+      : (state.pos === "ALL" ? "Rushes + targets; pass attempts for QBs" : "Rushes + targets");
+    currentRows = sortRows(filtered());
+    // Keep the panel in step with the filters: if the open player was filtered out, show the new top row
+    if (currentRows.length && !currentRows.some(function (p) { return p.id === state.selected; })) {
+      state.selected = currentRows[0].id;
+      if (mq.matches) closeSheet();
+    }
+    renderInsights(currentRows);
+    renderChartText();
+    drawScatter(currentRows);
+    drawTable(currentRows);
+    if (state.selected) renderDetail(state.selected, false);
+  }
+
+  function renderChartText() {
+    const fp = state.mode === "fp";
+    if (state.view === "luck") {
+      $("chartTitle").textContent = fp ? "Luck vs opportunity" : "Touchdown luck vs opportunity";
+      $("chartSub").textContent = fp
+        ? "Points above the zero line are scoring more than their usage predicts."
+        : "Players above the zero line have scored more TDs than their looks predict.";
+    } else {
+      $("chartTitle").textContent = fp ? "Actual vs expected PPR" : "Actual vs expected touchdowns";
+      $("chartSub").textContent = "Above the diagonal means outscoring their opportunity.";
+    }
+  }
+
+  function renderInsights(rows) {
+    const k = K();
+    const sorted = rows.slice().sort(function (a, b) { return b[k.d] - a[k.d]; });
+    const hot = sorted.filter(function (p) { return p[k.d] > 0; }).slice(0, 5);
+    const cold = sorted.filter(function (p) { return p[k.d] < 0; }).reverse().slice(0, 5);
+    const maxAbs = Math.max(1e-9, Math.abs(hot.length ? hot[0][k.d] : 0), Math.abs(cold.length ? cold[0][k.d] : 0));
+    const word = state.mode === "fp" ? "PPR" : "touchdowns";
+    $("hotSub").textContent = "Most " + word + " above expected";
+    $("coldSub").textContent = "Most " + word + " below expected";
+    function li(p, i, cls) {
+      const pct = Math.max(2, Math.abs(p[k.d]) / maxAbs * 100);
+      const cur = p.id === state.selected ? ' aria-current="true"' : "";
+      return '<li><button type="button" data-id="' + esc(p.id) + '"' + cur + ">" +
+        '<span class="rank-n">' + (i + 1) + "</span>" +
+        '<span class="who"><span class="who-name">' + esc(p.name) + '</span><span class="who-sub">' + shape(p.pos) + esc(p.pos) + " · " + esc(p.team) + "</span></span>" +
+        '<span class="meter ' + cls + '" aria-hidden="true"><i style="width:' + pct.toFixed(1) + '%"></i></span>' +
+        '<span class="rank-v ' + cls + '">' + fmtS(p[k.d], 1) + "</span></button></li>";
+    }
+    const empty = '<li class="empty-mini">No players match these filters.</li>';
+    $("hotList").innerHTML = hot.length ? hot.map(function (p, i) { return li(p, i, "hot"); }).join("") : empty;
+    $("coldList").innerHTML = cold.length ? cold.map(function (p, i) { return li(p, i, "cold"); }).join("") : empty;
+  }
+  ["hotList", "coldList"].forEach(function (id) {
+    $(id).addEventListener("click", function (e) {
+      const b = e.target.closest("button[data-id]");
+      if (b) select(b.dataset.id, true);
+    });
+  });
+
+  /* ---------------- Scatter ---------------- */
+  function plotTheme() {
+    return {
+      ink: css("--ink"), ink2: css("--ink-2"), muted: css("--muted"), grid: css("--grid"),
+      axis: css("--axis"), surface: css("--surface"), hot: css("--hot"), cold: css("--cold"),
+      hotText: css("--hot-text"), coldText: css("--cold-text"), neutral: css("--neutral-fill"),
+      pos: { QB: css("--qb"), RB: css("--rb"), WR: css("--wr"), TE: css("--te") }
+    };
+  }
+  function baseLayout(t) {
+    return {
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: { family: "Inter, system-ui, sans-serif", size: 12, color: t.muted },
+      hoverlabel: { bgcolor: t.surface, bordercolor: t.axis, font: { color: t.ink, size: 12, family: "Inter, system-ui, sans-serif" }, align: "left" },
+      showlegend: false
+    };
+  }
+
+  function drawScatter(rows) {
+    const el = $("scatter");
+    $("legend").innerHTML = POSITIONS.map(function (p) {
+      return "<span>" + shape(p) + p + "</span>";
+    }).join("") + (state.selected ? "<span>Selected player is outlined</span>" : "");
+    $("chartEmpty").classList.toggle("show", rows.length === 0 && HAS_PLOTLY);
+    if (!HAS_PLOTLY) return;
+    el.style.display = rows.length ? "" : "none";
+    if (!rows.length) return;
+
+    const t = plotTheme();
+    const k = K();
+    const luck = state.view === "luck";
+    const yKey = luck ? k.d : k.y;
+    const narrow = window.innerWidth < 760;
+    const anySel = !!state.selected && rows.some(function (p) { return p.id === state.selected; });
+
+    const traces = POSITIONS.map(function (pos) {
+      const sub = rows.filter(function (p) { return p.pos === pos; });
+      return {
+        type: "scatter",
+        mode: "markers",
+        name: pos,
+        x: sub.map(function (p) { return p[k.x]; }),
+        y: sub.map(function (p) { return p[yKey]; }),
+        customdata: sub.map(function (p) {
+          return [p.id, p.name, p.team, p.pos, p.fp, p.xfp, p.dfp, p.td, p.xtd, p.dtd, p.ltd, p.lyd, p.lrec, p.lint, p.g, p.opps];
+        }),
+        marker: {
+          symbol: SYMBOLS[pos],
+          color: t.pos[pos],
+          size: sub.map(function (p) { return p.id === state.selected ? 15 : (narrow ? 8 : 9); }),
+          opacity: sub.map(function (p) { return anySel ? (p.id === state.selected ? 1 : 0.62) : 0.85; }),
+          line: {
+            width: sub.map(function (p) { return p.id === state.selected ? 2.5 : 1; }),
+            color: sub.map(function (p) { return p.id === state.selected ? t.ink : t.surface; })
+          }
+        },
+        hovertemplate:
+          "<b>%{customdata[1]}</b>  %{customdata[2]} · %{customdata[3]}<br>" +
+          (state.mode === "fp"
+            ? "PPR %{customdata[4]:.1f} vs %{customdata[5]:.1f} expected  (<b>%{customdata[6]:+.1f}</b>)<br>" +
+              "TD %{customdata[10]:+.1f} · Yards %{customdata[11]:+.1f} · Catch %{customdata[12]:+.1f} · INT %{customdata[13]:+.1f}"
+            : "TD %{customdata[7]:.0f} vs %{customdata[8]:.1f} expected  (<b>%{customdata[9]:+.1f}</b>)<br>" +
+              "PPR %{customdata[4]:.1f} vs %{customdata[5]:.1f} expected  (%{customdata[6]:+.1f})") +
+          "<br><span style='color:" + t.muted + "'>%{customdata[14]} games · %{customdata[15]} opps</span><extra></extra>"
+      };
+    });
+
+    let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
+    rows.forEach(function (p) {
+      xmin = Math.min(xmin, p[k.x]); xmax = Math.max(xmax, p[k.x]);
+      ymin = Math.min(ymin, p[yKey]); ymax = Math.max(ymax, p[yKey]);
+    });
+
+    const layout = baseLayout(t);
+    layout.margin = { l: narrow ? 44 : 56, r: 14, t: 12, b: 48 };
+    layout.annotations = [];
+    layout.shapes = [];
+    const xTitle = state.mode === "fp" ? "Expected PPR" : "Expected touchdowns";
+
+    const sp0 = state.selected && rows.find(function (p) { return p.id === state.selected; });
+    if (luck) {
+      const xpad = (xmax - Math.min(0, xmin)) * 0.04 || 1;
+      const yspan = Math.max(Math.abs(ymin), Math.abs(ymax)) * 1.12 || 1;
+      layout.xaxis = { title: { text: xTitle, standoff: 8 }, range: [Math.min(0, xmin) - xpad, xmax + xpad], gridcolor: t.grid, linecolor: t.axis, zeroline: false, tickfont: { color: t.muted }, fixedrange: narrow };
+      layout.yaxis = { title: { text: state.mode === "fp" ? "PPR vs expected" : "TDs vs expected", standoff: 6 }, range: [-yspan, yspan], gridcolor: t.grid, zeroline: true, zerolinecolor: t.axis, zerolinewidth: 1.5, tickfont: { color: t.muted }, tickformat: "+~f", fixedrange: narrow };
+      layout.annotations.push(
+        { xref: "paper", yref: "paper", x: 0.01, y: 0.99, xanchor: "left", yanchor: "top", showarrow: false, text: "▲ Running hot", font: { color: t.hotText, size: 12, family: "Inter, system-ui, sans-serif" } },
+        { xref: "paper", yref: "paper", x: 0.01, y: 0.01, xanchor: "left", yanchor: "bottom", showarrow: false, text: "▼ Running cold", font: { color: t.coldText, size: 12, family: "Inter, system-ui, sans-serif" } }
+      );
+      // Direct labels: the extremes only
+      const n = narrow ? 2 : 3;
+      const byLuck = rows.slice().sort(function (a, b) { return b[k.d] - a[k.d]; });
+      const picks = byLuck.slice(0, n).filter(function (p) { return p[k.d] > 0; })
+        .concat(byLuck.slice(-n).filter(function (p) { return p[k.d] < 0; }));
+      // Place labels greedily so they don't sit on top of each other
+      const W = (el.clientWidth || 800) - layout.margin.l - layout.margin.r;
+      const H = (el.clientHeight || 500) - layout.margin.t - layout.margin.b;
+      const xr = layout.xaxis.range, yr = layout.yaxis.range;
+      const px = function (x) { return (x - xr[0]) / (xr[1] - xr[0]) * W; };
+      const py = function (y) { return (yr[1] - y) / (yr[1] - yr[0]) * H; };
+      const placed = [];
+      if (sp0) placed.push({ x: px(sp0[k.x]), y: py(sp0[k.d]) - 24, w: 110 });
+      // The labelled points themselves are obstacles too
+      const dots = picks.map(function (p) { return { x: px(p[k.x]), y: py(p[k.d]) }; });
+      picks.forEach(function (p) {
+        if (p.id === state.selected) return;
+        const up = p[k.d] > 0;
+        const label = shortName(p.name);
+        const w = label.length * 6.2 + 8;
+        const cx = px(p[k.x]), cy = py(p[k.d]);
+        const opts = up
+          ? [[0, -18], [0, 18], [w / 2 + 10, 0], [-w / 2 - 10, 0], [w / 2 + 10, -16], [-w / 2 - 10, -16]]
+          : [[0, 18], [0, -18], [w / 2 + 10, 0], [-w / 2 - 10, 0], [w / 2 + 10, 16], [-w / 2 - 10, 16]];
+        let pick = opts[0];
+        for (let i = 0; i < opts.length; i++) {
+          const lx = cx + opts[i][0], ly = cy + opts[i][1];
+          const hit = placed.some(function (q) { return Math.abs(q.x - lx) < (q.w + w) / 2 && Math.abs(q.y - ly) < 15; }) ||
+            dots.some(function (d) { return Math.abs(d.x - lx) < w / 2 + 6 && Math.abs(d.y - ly) < 18; });
+          const inside = lx - w / 2 > 0 && lx + w / 2 < W && ly > 8 && ly < H - 8;
+          if (!hit && inside) { pick = opts[i]; break; }
+        }
+        placed.push({ x: cx + pick[0], y: cy + pick[1], w: w });
+        layout.annotations.push({
+          x: p[k.x], y: p[k.d], text: esc(label), showarrow: true, arrowwidth: 1, arrowcolor: t.axis,
+          arrowhead: 0, ax: pick[0], ay: pick[1], standoff: 5,
+          font: { size: 11, color: t.ink2, family: "Inter, system-ui, sans-serif" }
+        });
+      });
+    } else {
+      let lo = Math.min(0, xmin, ymin), hi = Math.max(xmax, ymax);
+      const pad = (hi - lo) * 0.05 || 1;
+      lo = lo < 0 ? lo - pad : 0; hi += pad;
+      layout.xaxis = { title: { text: xTitle, standoff: 8 }, range: [lo, hi], gridcolor: t.grid, linecolor: t.axis, zeroline: false, fixedrange: narrow };
+      layout.yaxis = { title: { text: state.mode === "fp" ? "Actual PPR" : "Actual touchdowns", standoff: 6 }, range: [lo, hi], gridcolor: t.grid, linecolor: t.axis, zeroline: false, scaleanchor: "x", scaleratio: 1, fixedrange: narrow };
+      layout.shapes.push({ type: "line", x0: lo, y0: lo, x1: hi, y1: hi, line: { color: t.axis, width: 1.5 }, layer: "below" });
+      layout.annotations.push({ x: hi, y: hi, xanchor: "right", yanchor: "bottom", text: "Actual = expected", showarrow: false, font: { size: 11, color: t.muted } });
+    }
+
+    // Name the selected player on the chart
+    const sp = state.selected && rows.find(function (p) { return p.id === state.selected; });
+    if (sp) {
+      const yv = sp[yKey];
+      layout.annotations.push({
+        x: sp[k.x], y: yv, text: "<b>" + esc(shortName(sp.name)) + "</b>", showarrow: true, arrowwidth: 1.2, arrowcolor: t.ink,
+        arrowhead: 0, ax: 0, ay: (luck ? yv >= 0 : true) ? -22 : 22, standoff: 8, bgcolor: t.surface, borderpad: 3,
+        font: { size: 12, color: t.ink, family: "Inter, system-ui, sans-serif" }
+      });
+    }
+
+    Plotly.react(el, traces, layout, { responsive: true, displayModeBar: false, scrollZoom: false });
+    if (!el.dataset.bound) {
+      el.dataset.bound = "1";
+      el.on("plotly_click", function (ev) {
+        if (!ev || !ev.points || !ev.points.length) return;
+        const cd = ev.points[0].customdata;
+        if (cd && cd[0]) select(cd[0], true);
+      });
+    }
+  }
+
+  /* ---------------- Table ---------------- */
+  const COLS = {
+    fp: [
+      { k: "name", label: "Player", f: "player" },
+      { k: "dfp", label: "Luck", f: "luckbar", title: "PPR minus expected PPR" },
+      { k: "fp", label: "PPR", f: "1", grp: true, title: "Actual PPR points" },
+      { k: "xfp", label: "xPPR", f: "1", title: "Expected PPR points" },
+      { k: "fpg", label: "PPR/g", f: "1", title: "Actual PPR per game" },
+      { k: "g", label: "G", f: "int", grp: true, title: "Games played" },
+      { k: "opps", label: "Opps", f: "int", title: "Rushes + targets (pass attempts for QBs)" },
+      { k: "td", label: "TD", f: "0", grp: true, title: "Touchdowns" },
+      { k: "xtd", label: "xTD", f: "1", title: "Expected touchdowns" },
+      { k: "dtd", label: "TD ±", f: "luck", title: "Touchdowns minus expected" },
+      { k: "ltd", label: "TD luck", f: "luck", grp: true, title: "PPR from touchdowns over expected" },
+      { k: "lyd", label: "Yards luck", f: "luck", title: "PPR from yards over expected" },
+      { k: "lrec", label: "Catch luck", f: "luck", title: "PPR from receptions over expected" },
+      { k: "lint", label: "INT luck", f: "luck", title: "PPR from interceptions vs expected" }
+    ],
+    td: [
+      { k: "name", label: "Player", f: "player" },
+      { k: "dtd", label: "TD ±", f: "luckbar", title: "Touchdowns minus expected" },
+      { k: "td", label: "TD", f: "0", grp: true, title: "Touchdowns" },
+      { k: "xtd", label: "xTD", f: "1", title: "Expected touchdowns" },
+      { k: "g", label: "G", f: "int", grp: true, title: "Games played" },
+      { k: "opps", label: "Opps", f: "int", title: "Rushes + targets (pass attempts for QBs)" },
+      { k: "fp", label: "PPR", f: "1", grp: true, title: "Actual PPR points" },
+      { k: "xfp", label: "xPPR", f: "1", title: "Expected PPR points" },
+      { k: "dfp", label: "Luck", f: "luck", title: "PPR minus expected PPR" },
+      { k: "ltd", label: "TD luck", f: "luck", grp: true, title: "PPR from touchdowns over expected" },
+      { k: "lyd", label: "Yards luck", f: "luck", title: "PPR from yards over expected" },
+      { k: "lrec", label: "Catch luck", f: "luck", title: "PPR from receptions over expected" },
+      { k: "lint", label: "INT luck", f: "luck", title: "PPR from interceptions vs expected" }
+    ]
+  };
+
+  function drawTable(rows) {
+    const cols = COLS[state.mode];
+    $("thead").innerHTML = "<tr>" + cols.map(function (c) {
+      const active = state.sortKey === c.k;
+      const aria = active ? ' aria-sort="' + (state.sortDir === -1 ? "descending" : "ascending") + '"' : "";
+      const cls = (c.f === "player" ? "c-player" : "") + (c.grp ? " grp" : "");
+      const arr = active ? (state.sortDir === -1 ? "▼" : "▲") : "";
+      return '<th scope="col" class="' + cls + '"' + aria + '><button type="button" data-k="' + c.k + '"' +
+        (c.title ? ' title="' + esc(c.title) + '"' : "") + ">" + esc(c.label) + '<span class="arr" aria-hidden="true">' + arr + "</span></button></th>";
+    }).join("") + "</tr>";
+
+    const barKey = cols.find(function (c) { return c.f === "luckbar"; }).k;
+    let maxAbs = 1e-9;
+    rows.forEach(function (p) { maxAbs = Math.max(maxAbs, Math.abs(p[barKey] || 0)); });
+
+    const shown = state.showAll ? rows : rows.slice(0, PAGE);
+    $("tbody").innerHTML = shown.map(function (p, i) {
+      const tds = cols.map(function (c) {
+        const v = p[c.k];
+        const g = c.grp ? " grp" : "";
+        if (c.f === "player") {
+          return '<td class="c-player"><div class="pcell"><span class="rk">' + (i + 1) + '</span><div class="who">' +
+            '<span class="pname">' + esc(p.name) + '</span><span class="who-sub">' + shape(p.pos) + esc(p.pos) + " · " + esc(p.team) + "</span></div></div></td>";
+        }
+        if (c.f === "int") return '<td class="' + g + '">' + v + "</td>";
+        if (c.f === "0") return '<td class="' + g + '">' + fmt(v, 0) + "</td>";
+        if (c.f === "1") return '<td class="' + g + '">' + fmt(v, 1) + "</td>";
+        const tn = tone(v);
+        if (c.f === "luckbar") {
+          const w = Math.min(50, Math.abs(v) / maxAbs * 50);
+          return '<td class="' + g + '"><span class="luckcell"><b class="' + tn + '">' + fmtS(v, 1) + "</b>" +
+            '<span class="mini" aria-hidden="true">' + (tn ? '<i class="' + tn + '" style="width:' + w.toFixed(1) + '%"></i>' : "") + "</span></span></td>";
+        }
+        return '<td class="' + (tn || "dim") + g + '">' + fmtS(v, 1) + "</td>";
+      }).join("");
+      const sel = p.id === state.selected ? "true" : "false";
+      return '<tr tabindex="0" data-id="' + esc(p.id) + '" aria-selected="' + sel + '">' + tds + "</tr>";
+    }).join("");
+
+    $("tableEmpty").hidden = rows.length > 0;
+    document.querySelector(".table-scroll").hidden = rows.length === 0;
+    $("count").textContent = rows.length === players.length
+      ? rows.length + " players"
+      : rows.length + " of " + players.length + " players";
+    const more = $("moreBtn");
+    more.hidden = rows.length <= PAGE;
+    more.textContent = state.showAll ? "Show top " + PAGE : "Show all " + rows.length + " players";
+    $("boardFoot").style.display = rows.length ? "" : "none";
+  }
+  $("thead").addEventListener("click", function (e) {
+    const b = e.target.closest("button[data-k]");
+    if (!b) return;
+    const k = b.dataset.k;
+    if (state.sortKey === k) state.sortDir *= -1;
+    else { state.sortKey = k; state.sortDir = (k === "name" || k === "team" || k === "pos") ? 1 : -1; }
+    currentRows = sortRows(currentRows);
+    drawTable(currentRows);
+  });
+  $("tbody").addEventListener("click", function (e) {
+    const tr = e.target.closest("tr[data-id]");
+    if (tr) select(tr.dataset.id, true);
+  });
+  $("tbody").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const tr = e.target.closest("tr[data-id]");
+    if (!tr) return;
+    e.preventDefault();
+    select(tr.dataset.id, true);
+  });
+
+  /* ---------------- Selection & detail ---------------- */
+  let lastFocus = null;
+  function select(id, userAction) {
+    if (!byId[id]) return;
+    state.selected = id;
+    document.querySelectorAll("#tbody tr").forEach(function (tr) {
+      tr.setAttribute("aria-selected", tr.dataset.id === id ? "true" : "false");
+    });
+    document.querySelectorAll(".rank-list button").forEach(function (b) {
+      if (b.dataset.id === id) b.setAttribute("aria-current", "true");
+      else b.removeAttribute("aria-current");
+    });
+    drawScatter(currentRows);
+    if (userAction && mq.matches) openSheet();
+    renderDetail(id, true);
+  }
+  function openSheet() {
+    lastFocus = document.activeElement;
+    $("detail").classList.add("open");
+    $("backdrop").classList.add("open");
+    document.body.classList.add("sheet-open");
+    $("detail").setAttribute("role", "dialog");
+    $("detail").setAttribute("aria-modal", "true");
+    setTimeout(function () { $("detail").focus({ preventScroll: true }); }, 30);
+  }
+  function closeSheet() {
+    if (!$("detail").classList.contains("open")) return;
+    $("detail").classList.remove("open");
+    $("backdrop").classList.remove("open");
+    document.body.classList.remove("sheet-open");
+    $("detail").removeAttribute("role");
+    $("detail").removeAttribute("aria-modal");
+    if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+  }
+  $("backdrop").addEventListener("click", closeSheet);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+  mq.addEventListener("change", function () { if (!mq.matches) closeSheet(); drawWeeklyIfAny(); });
+
+  function renderDetail(id) {
+    const p = byId[id];
+    if (!p) return;
+    const k = K();
+    const d = p[k.d];
+    const tn = Math.abs(d) < k.eps ? "even" : (d > 0 ? "hot" : "cold");
+    const verdictText = tn === "even" ? "Right on expectation" : (tn === "hot" ? "Running hot" : "Running cold");
+    const icon = tn === "even" ? "i-even" : (tn === "hot" ? "i-up" : "i-down");
+
+    // Luck breakdown bars (components add to FP - xFP)
+    const comps = [["Touchdowns", p.ltd], ["Yards", p.lyd], ["Catches", p.lrec], ["INTs", p.lint]];
+    let bmax = 1e-9;
+    comps.forEach(function (c) { bmax = Math.max(bmax, Math.abs(c[1] || 0)); });
+    const brows = comps.map(function (c) {
+      const t = tone(c[1]);
+      const w = Math.min(50, Math.abs(c[1] || 0) / bmax * 50);
+      return '<div class="brow"><span class="brow-label">' + c[0] + '</span><span class="dbar" aria-hidden="true">' +
+        (t ? '<i class="' + t + '" style="width:' + w.toFixed(1) + '%"></i>' : "") +
+        '</span><span class="brow-v ' + t + '">' + fmtS(c[1], 1) + "</span></div>";
+    }).join("") +
+      '<div class="brow total"><span class="brow-label">Total</span><span></span><span class="brow-v ' + tone(p.dfp) + '">' + fmtS(p.dfp, 1) + "</span></div>";
+
+    // Stat lines, only those that apply to this player
+    const lines = [
+      ["Pass yards", p.py, p.xpy, 0], ["Pass TD", p.ptd, p.xptd, 1], ["Interceptions", p.ints, p.xints, 1],
+      ["Rush yards", p.ry, p.xry, 0], ["Rush TD", p.rtd, p.xrtd, 1],
+      ["Receptions", p.rec, p.xrec, 1], ["Rec yards", p.recy, p.xrecy, 0], ["Rec TD", p.rec_td, p.xrec_td, 1]
+    ].filter(function (r) { return Math.abs(r[1] || 0) >= 1 || Math.abs(r[2] || 0) >= 0.5; });
+    const statRows = lines.map(function (r) {
+      const diff = (r[1] || 0) - (r[2] || 0);
+      // Fewer interceptions than expected is good luck, so flip its tone
+      const t = r[0] === "Interceptions" ? tone(-diff) : tone(diff);
+      return "<tr><td>" + r[0] + "</td><td>" + fmt(r[1], 0) + "</td><td>" + fmt(r[2], r[3]) + '</td><td class="' + t + '">' + fmtS(diff, r[3]) + "</td></tr>";
+    }).join("");
+
+    const big = state.mode === "fp"
+      ? [["PPR", fmt(p.fp, 1), fmt(p.fpg, 1) + " per game"], ["Expected", fmt(p.xfp, 1), fmt(p.xfpg, 1) + " per game"], ["Luck", fmtS(p.dfp, 1), fmtS(p.dfp / Math.max(1, p.g), 1) + " per game"]]
+      : [["Touchdowns", fmt(p.td, 0), p.g + " games"], ["Expected", fmt(p.xtd, 1), fmt(p.xtd / Math.max(1, p.g), 2) + " per game"], ["TD luck", fmtS(p.dtd, 1), fmtS(p.ltd, 1) + " PPR"]];
+    const tiles = big.map(function (b, i) {
+      const cls = i === 2 ? (tn === "even" ? "" : tn) : "";
+      return '<div class="tile"><div class="tile-label">' + b[0] + '</div><div class="tile-value num ' + cls + '">' + b[1] + '</div><div class="tile-sub">' + b[2] + "</div></div>";
+    }).join("");
+
+    $("detailBody").innerHTML =
+      '<div class="detail-head"><div>' +
+        '<h3 class="detail-name" id="detailName">' + esc(p.name) + "</h3>" +
+        '<div class="detail-meta"><span class="pos-tag">' + shape(p.pos) + esc(p.pos) + "</span>" + esc(p.team) + " · " + p.g + " games · " + p.opps + " " + oppLabel(p.pos) + "</div>" +
+      "</div>" +
+      '<div style="display:flex;gap:8px;align-items:center"><span class="verdict ' + tn + '"><svg aria-hidden="true"><use href="#' + icon + '"/></svg>' + verdictText + "</span>" +
+      '<button type="button" class="icon-btn sheet-close" id="sheetClose" aria-label="Close player detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+      "</div>" +
+      '<div class="tiles">' + tiles + "</div>" +
+      '<div class="detail-section"><h4>Where the luck came from <small>PPR vs expected</small></h4><div class="breakdown">' + brows + "</div></div>" +
+      (statRows ? '<div class="detail-section"><h4>Actual vs expected</h4><table class="stat-table"><thead><tr><th scope="col">Stat</th><th scope="col">Actual</th><th scope="col">Expected</th><th scope="col">Diff</th></tr></thead><tbody>' + statRows + "</tbody></table></div>" : "") +
+      '<div class="detail-section"><h4>Week by week <small>' + (state.mode === "fp" ? "PPR" : "touchdowns") + '</small></h4>' +
+        '<div class="wk-legend"><span><i style="background:var(--hot)"></i>Beat expected</span><span><i style="background:var(--cold)"></i>Fell short</span><span><i class="exp"></i>Expected</span></div>' +
+        '<div id="weekly"></div></div>' +
+      '<p class="detail-foot">Usage is earned, so a big expected number is real opportunity. The luck is the gap.</p>';
+    $("detail").setAttribute("aria-labelledby", "detailName");
+    const closeBtn = $("sheetClose");
+    if (closeBtn) closeBtn.addEventListener("click", closeSheet);
+    drawWeekly(p);
+    // The chart card stretches to the panel's height on wide screens
+    if (HAS_PLOTLY && !mq.matches) requestAnimationFrame(function () {
+      const el = $("scatter");
+      if (el.offsetParent && el.data) Plotly.Plots.resize(el).then(function () { drawScatter(currentRows); });
+    });
+  }
+
+  function drawWeeklyIfAny() { if (state.selected && byId[state.selected]) drawWeekly(byId[state.selected]); }
+
+  function drawWeekly(p) {
+    const el = $("weekly");
+    if (!el || !HAS_PLOTLY) { if (el) el.innerHTML = '<p class="field-hint">Weekly chart needs the chart library.</p>'; return; }
+    const t = plotTheme();
+    const k = K();
+    const wk = weeksById[p.id] || [];
+    const labels = wk.map(function (w) { return "W" + w.w; });
+    const eps = state.mode === "fp" ? 0.05 : 0.01;
+    const colors = wk.map(function (w) {
+      const diff = w[k.y] - w[k.x];
+      return diff > eps ? t.hot : (diff < -eps ? t.cold : t.neutral);
+    });
+    const hover = wk.map(function (w) {
+      return "<b>Week " + w.w + (w.opp ? " vs " + esc(w.opp) : "") + "</b><br>Actual " + fmt(w[k.y], 1) + " · Expected " + fmt(w[k.x], 1) + "  (" + fmtS(w[k.y] - w[k.x], 1) + ")";
+    });
+    const traces = [
+      { type: "bar", x: labels, y: wk.map(function (w) { return w[k.y]; }), marker: { color: colors, line: { width: 0 } }, width: 0.6, text: hover, hoverinfo: "text", hovertemplate: "%{text}<extra></extra>", textposition: "none" },
+      { type: "scatter", mode: "markers", x: labels, y: wk.map(function (w) { return w[k.x]; }), marker: { symbol: "line-ew", size: 22, line: { width: 2.5, color: t.ink } }, hoverinfo: "skip" }
+    ];
+    const layout = baseLayout(t);
+    layout.margin = { l: 36, r: 8, t: 6, b: 28 };
+    layout.bargap = 0.3;
+    layout.xaxis = { type: "category", tickfont: { color: t.muted, size: 11 }, linecolor: t.axis, fixedrange: true };
+    layout.yaxis = { gridcolor: t.grid, zeroline: true, zerolinecolor: t.axis, tickfont: { color: t.muted, size: 11 }, fixedrange: true, rangemode: "tozero" };
+    Plotly.react(el, traces, layout, { responsive: true, displayModeBar: false });
+  }
+
+  function drawCharts() {
+    drawScatter(currentRows);
+    drawWeeklyIfAny();
+  }
+
+  /* ---------------- Static content ---------------- */
+  function renderStatic() {
+    const m = DATA.meta;
+    $("throughChip").textContent = "Through " + m.dataThrough;
+    $("weeksChip").textContent = "Weeks 1–" + maxWeek;
+    $("playersChip").textContent = players.length + " players";
+    $("updated").textContent = "Play-by-play last updated " + m.pbpUpdated + ".";
+
+    const v = m.validation || {};
+    const L = v.league2026 || {};
+    const hold = v.holdout2025_by_pos || {};
+    function c3(x) { return isNum(x) ? Number(x).toFixed(3) : "—"; }
+    function n0(x) { return isNum(x) ? Math.round(Number(x)).toLocaleString("en-US") : "—"; }
+    function kpi(label, arr, d) {
+      if (!arr) return "";
+      const val = d === 0 ? n0(arr[0]) + " <span>/ " + n0(arr[1]) + "</span>" : fmt(arr[0], d) + " <span>/ " + fmt(arr[1], d) + "</span>";
+      return '<div class="kpi"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + val + "</div></div>";
+    }
+    function corr(label, text) { return '<div class="kpi"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + text + "</div></div>"; }
+
+    $("methodBody").innerHTML =
+      '<div class="prose">' +
+        "<p>" + esc(m.dataThroughNote) + "</p>" +
+        "<p>Each play gets an expected outcome from what a league-average play in the same situation produced. Add those up and you get a player's <strong>expected PPR</strong>. The difference from what they actually scored is the luck (plus skill) this page is about.</p>" +
+        "<details><summary>Scoring</summary><div><p>" + esc(m.scoring) + "</p>" +
+          "<p>Luck splits into four parts that add up to PPR minus expected PPR: <strong>TD luck</strong> (6 per rushing or receiving TD over expected, 4 per passing TD), <strong>yards luck</strong> (0.1 per rush or receiving yard, 0.04 per passing yard), <strong>catch luck</strong> (1 per reception over expected) and <strong>INT luck</strong> (−2 per interception over expected, so fewer interceptions than expected is positive).</p></div></details>" +
+        "<details><summary>Model</summary><div><p>" + esc(m.method) + "</p></div></details>" +
+        "<details><summary>Limits</summary><div><p>This is a first-pass public model. It doesn't use player identity, coverage or blocking. Touchdowns swing a lot in a 9–10 game sample. Usage isn't luck: lots of end-zone targets is opportunity earned. The latest week is incomplete until Monday Night Football is in the file.</p></div></details>" +
+      "</div>" +
+      "<div>" +
+        '<p class="kpis-title">2026 league totals, actual / expected</p>' +
+        '<div class="kpis">' +
+          kpi("Rush yards", L.rush_yd, 0) + kpi("Receiving yards", L.rec_yd, 0) + kpi("Receptions", L.rec, 0) +
+          kpi("Rush TDs", L.rush_td, 1) + kpi("Pass TDs", L.pass_td, 1) + kpi("Interceptions", L.int, 1) +
+        "</div>" +
+        '<p class="kpis-title">Correlation checks</p>' +
+        '<div class="kpis">' +
+          corr("2025 holdout, all players", c3(v.holdout2025_corr_fp_xfp)) +
+          corr("Holdout QB / RB", c3(hold.QB) + " / " + c3(hold.RB)) +
+          corr("Holdout WR / TE", c3(hold.WR) + " / " + c3(hold.TE)) +
+          corr("2026 xPPR vs actual", c3(v.corr_our_xfp_actual)) +
+          corr("xPPR vs ffopportunity", c3(v.corr_ffopportunity_xfp)) +
+          corr("Luck vs ffopportunity", c3(v.corr_ffopportunity_luck)) +
+        "</div>" +
+      "</div>";
+  }
+
+  /* ---------------- Boot ---------------- */
+  renderStatic();
+  currentRows = sortRows(filtered());
+  if (currentRows.length) state.selected = currentRows[0].id; // desktop shows the top player; phones keep the sheet closed
+  render();
+  if (state.selected) renderDetail(state.selected);
+  let rt;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () { drawScatter(currentRows); }, 150);
+  });
+})();
+</script>
+</body>
+</html>
